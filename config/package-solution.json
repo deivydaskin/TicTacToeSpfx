@@ -1,0 +1,13 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "tic-tac-toe-spfx-client-side-solution",
+    "id": "71a24ee3-4c32-46e9-8126-28ef8e71f03e",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "isDomainIsolated": false
+  },
+  "paths": {
+    "zippedPackage": "solution/tic-tac-toe-spfx.sppkg"
+  }
+}

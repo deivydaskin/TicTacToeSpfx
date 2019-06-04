@@ -1,0 +1,18 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "tic-tac-toe-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/ticTacToe/TicTacToeWebPart.js",
+          "manifest": "./src/webparts/ticTacToe/TicTacToeWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "TicTacToeWebPartStrings": "lib/webparts/ticTacToe/loc/{locale}.js"
+  }
+}
