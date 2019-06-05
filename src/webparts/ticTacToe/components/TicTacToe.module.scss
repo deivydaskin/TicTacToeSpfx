@@ -1,4 +1,4 @@
-@import '~@microsoft/sp-office-ui-fabric-core/dist/sass/SPFabricCore.scss';
+@import "~@microsoft/sp-office-ui-fabric-core/dist/sass/SPFabricCore.scss";
 
 .ticTacToe {
   .container {
@@ -51,7 +51,8 @@
     // Basic Button
     outline: transparent;
     position: relative;
-    font-family: "Segoe UI WestEuropean","Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,"Helvetica Neue",sans-serif;
+    font-family: "Segoe UI WestEuropean", "Segoe UI", -apple-system,
+      BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif;
     -webkit-font-smoothing: antialiased;
     font-size: $ms-font-size-m;
     font-weight: $ms-font-weight-regular;
@@ -70,5 +71,49 @@
       vertical-align: top;
       display: inline-block;
     }
+  }
+  .board-row:after {
+    clear: both;
+    content: "";
+    display: table;
+  }
+
+  .status {
+    margin-bottom: 10px;
+  }
+
+  .square {
+    background: #fff;
+    border: 1px solid #999;
+    float: left;
+    font-size: 2.5rem;
+    font-weight: bold;
+    line-height: 34px;
+    height: 5vw;
+    margin-right: -1px;
+    margin-top: -1px;
+    padding: 0;
+    text-align: center;
+    width: 5vw;
+  }
+
+  .square:focus {
+    outline: none;
+  }
+
+  .kbd-navigation .square:focus {
+    background: #ddd;
+  }
+
+  .game {
+    display: flex;
+    flex-direction: row;
+  }
+
+  .game-info {
+    @include ms-font-xl;
+    @include ms-fontColor-white;
+    font-weight: $ms-font-weight-semibold;
+    margin-left: 20px;
   }
 }
