@@ -46,6 +46,7 @@ var addMSG = function(msg, who) {
   $("#chat-screen-wp").scrollTop($("#chat-screen").height());
 };
 createOfferSDP();
+
 var sendMSG = function() {
   var value = $("#msg").val();
   if (value) {

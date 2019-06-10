@@ -3,7 +3,7 @@ import * as React from "react";
 import styles from "./TicTacToe.module.scss";
 import { ITicTacToeProps } from "./props/ITicTacToeProps";
 import Game from "./Game";
-import { checkStat, createOffer, start } from "./OfferSDP";
+import { checkStat, createOffer, start, sendMSG } from "./OfferSDP";
 import createAnswerSDP from "./AnswerSDP";
 
 interface IState {
@@ -68,6 +68,12 @@ export default class TicTacToe extends React.Component<
     });
   }
 
+  handleKeyPress = event => {
+    if (event.key === "Enter" || event.id === "send") {
+      sendMSG("SADD");
+    }
+  };
+
   public render(): React.ReactElement<ITicTacToeProps> {
     return (
       <div className={styles.ticTacToe}>
@@ -80,8 +86,15 @@ export default class TicTacToe extends React.Component<
               Join
             </button>
             <input id='status' disabled />
-            <input id='msg' multiple type='text' />
-            <button id='send'>Send</button>
+            <input
+              id='msg'
+              multiple
+              type='text'
+              onKeyPress={this.handleKeyPress}
+            />
+            <button id='send' onClick={this.handleKeyPress}>
+              Send
+            </button>
             <div className={styles.column}>
               {this.state.start ? (
                 <div>
@@ -102,6 +115,7 @@ export default class TicTacToe extends React.Component<
                   />
 
                   <button onClick={checkStat}>Check status</button>
+                  <Game />
                 </div>
               ) : null}
               {this.state.join ? (
@@ -120,6 +134,7 @@ export default class TicTacToe extends React.Component<
                     placeholder='create participant SDP'
                     //value={this.state.createSDPval}
                   />
+                  <Game />
                 </div>
               ) : null}
             </div>

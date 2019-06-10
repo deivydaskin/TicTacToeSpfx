@@ -31,18 +31,10 @@ export function checkStat() {
   console.log(dc);
 }
 
-var sendMSG = function() {
-  var value = $("#msg").val();
+export const sendMSG = move => {
+  console.log(move);
+  var value = move;
   if (value) {
     dc.send(value);
-    $("#msg").val("");
   }
 };
-
-$("#msg").keypress(function(e) {
-  if (e.which == 13) {
-    sendMSG();
-  }
-});
-
-$("#send").click(sendMSG);

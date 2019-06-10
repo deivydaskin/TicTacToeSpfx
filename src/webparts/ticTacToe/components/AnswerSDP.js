@@ -15,7 +15,17 @@ function dcInit(dc) {
     $("#status").val("CONNECTED!");
   };
   dc.onmessage = function(e) {
-    if (e.data) console.log(e.data);
+    if (e.data) {
+      console.log(e.data);
+      console.log(typeof e.data);
+      var str = e.data;
+      var res = str.split(",");
+      console.log(res);
+      let event = new CustomEvent("tic", { detail: res });
+      console.log(event);
+      document.dispatchEvent(event);
+      console.log(document.dispatchEvent(event));
+    }
   };
 }
 
