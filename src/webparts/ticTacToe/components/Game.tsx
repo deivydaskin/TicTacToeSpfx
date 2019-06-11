@@ -24,13 +24,12 @@ export default class Game extends React.Component<{}, IGameState> {
     this.handleRestart = this.handleRestart.bind(this);
   }
 
-  handleClick(i: number) {
+  private handleClick(i: number): void {
     const squares = this.state.squares.slice();
     if (calculateWinner(squares) || squares[i]) {
       return;
     }
     squares[i] = this.state.xIsNext ? "X" : "O";
-    //console.log(sendMSGOffer(squares, this.state.xIsNext));
     this.state.xIsNext
       ? sendMSGOffer(squares, !this.state.xIsNext)
       : sendMSGAnswer(squares, !this.state.xIsNext);
@@ -41,17 +40,15 @@ export default class Game extends React.Component<{}, IGameState> {
     });
   }
 
-  handleCustomEvent(e) {
+  private handleCustomEvent(e): void {
     let event = JSON.parse(e.detail);
-    console.log(event.figures);
-    console.log(event.xIsNext);
     this.setState({
       squares: event.figures,
       xIsNext: event.xIsNext
     });
   }
 
-  handleRestart() {
+  private handleRestart(): void {
     this.setState({
       squares: initsqrs,
       xIsNext: !initxIsNext
@@ -63,7 +60,7 @@ export default class Game extends React.Component<{}, IGameState> {
     document.addEventListener("tic", e => this.handleCustomEvent(e));
   }
 
-  render() {
+  public render() {
     const winner = calculateWinner(this.state.squares);
 
     let status: string;

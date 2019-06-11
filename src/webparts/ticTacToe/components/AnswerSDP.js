@@ -13,25 +13,22 @@ function dcInit(dc) {
   dc.onopen = function() {
     $("textarea").attr("disabled", true);
     $("#joinGame").attr("disabled", true);
-    $("#status1").val("CONNECTED!");
+    $("#status").val("CONNECTED!");
   };
   dc.onmessage = function(e) {
     if (e.data) {
-      console.log(e);
-      //console.log(typeof e.data);
-      var str = e.data;
-      var res = str.split(",");
-      //console.log(res);
-      let event = new CustomEvent("tic", { detail: str });
-      //console.log(event);
+      let event = new CustomEvent("tic", { detail: e.data });
       document.dispatchEvent(event);
-      //console.log(pc);
     }
   };
 }
 
+function getOfferDesc() {
+  return new RTCSessionDescription(JSON.parse($("#offerSDP").val()));
+}
+
 export default function createAnswerSDP() {
-  var offerDesc = new RTCSessionDescription(JSON.parse($("#offerSDP").val()));
+  var offerDesc = getOfferDesc();
 
   pc.setRemoteDescription(offerDesc);
   pc.createAnswer(
@@ -46,17 +43,11 @@ export default function createAnswerSDP() {
 }
 
 export const sendMSGAnswer = (move, xIsNext) => {
-  //console.log(move);
   var value = {
     figures: move,
     xIsNext: xIsNext
   };
   if (value) {
     dc.send(JSON.stringify(value));
-    //console.log(dc.send(value, xIsNext));
   }
 };
-
-export function getMove() {
-  return pc;
-}
