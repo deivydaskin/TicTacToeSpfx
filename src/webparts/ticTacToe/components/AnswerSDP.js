@@ -12,19 +12,20 @@ pc.ondatachannel = function(e) {
 function dcInit(dc) {
   dc.onopen = function() {
     $("textarea").attr("disabled", true);
-    $("#status").val("CONNECTED!");
+    $("#joinGame").attr("disabled", true);
+    $("#status1").val("CONNECTED!");
   };
   dc.onmessage = function(e) {
     if (e.data) {
-      console.log(e.data);
-      console.log(typeof e.data);
+      console.log(e);
+      //console.log(typeof e.data);
       var str = e.data;
       var res = str.split(",");
-      console.log(res);
-      let event = new CustomEvent("tic", { detail: res });
-      console.log(event);
+      //console.log(res);
+      let event = new CustomEvent("tic", { detail: str });
+      //console.log(event);
       document.dispatchEvent(event);
-      console.log(document.dispatchEvent(event));
+      //console.log(pc);
     }
   };
 }
@@ -44,18 +45,18 @@ export default function createAnswerSDP() {
   ).then(() => $("#participantSDP").val(JSON.stringify(pc.localDescription)));
 }
 
-var sendMSG = function() {
-  var value = $("#msg").val();
+export const sendMSGAnswer = (move, xIsNext) => {
+  //console.log(move);
+  var value = {
+    figures: move,
+    xIsNext: xIsNext
+  };
   if (value) {
-    dc.send(value);
-    $("#msg").val("");
+    dc.send(JSON.stringify(value));
+    //console.log(dc.send(value, xIsNext));
   }
 };
 
-$("#msg").keypress(function(e) {
-  if (e.which == 13) {
-    sendMSG();
-  }
-});
-
-$("#send").click(sendMSG);
+export function getMove() {
+  return pc;
+}

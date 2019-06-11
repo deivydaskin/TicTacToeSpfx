@@ -3,12 +3,16 @@ import styles from "./TicTacToe.module.scss";
 import Board from "./Board";
 import calculateWinner from "./Winner";
 import { IGameState } from "./props/IGameState";
-import { sendMSG } from "./OfferSDP";
+import { sendMSGOffer } from "./OfferSDP";
+import { sendMSGAnswer } from "./AnswerSDP";
+
+const initsqrs = [];
+var initxIsNext = true;
 
 export default class Game extends React.Component<{}, IGameState> {
   constructor(props) {
     super(props);
-    const initsqrs = [];
+
     for (let i = 0; i < 9; i++) {
       initsqrs[i] = null;
     }
@@ -16,6 +20,8 @@ export default class Game extends React.Component<{}, IGameState> {
       squares: initsqrs,
       xIsNext: true
     };
+
+    this.handleRestart = this.handleRestart.bind(this);
   }
 
   handleClick(i: number) {
@@ -24,8 +30,11 @@ export default class Game extends React.Component<{}, IGameState> {
       return;
     }
     squares[i] = this.state.xIsNext ? "X" : "O";
-    console.log(squares);
-    sendMSG(squares);
+    //console.log(sendMSGOffer(squares, this.state.xIsNext));
+    this.state.xIsNext
+      ? sendMSGOffer(squares, !this.state.xIsNext)
+      : sendMSGAnswer(squares, !this.state.xIsNext);
+
     this.setState({
       squares: squares,
       xIsNext: !this.state.xIsNext
@@ -33,10 +42,21 @@ export default class Game extends React.Component<{}, IGameState> {
   }
 
   handleCustomEvent(e) {
-    console.log(e.detail);
+    let event = JSON.parse(e.detail);
+    console.log(event.figures);
+    console.log(event.xIsNext);
     this.setState({
-      squares: e.detail
+      squares: event.figures,
+      xIsNext: event.xIsNext
     });
+  }
+
+  handleRestart() {
+    this.setState({
+      squares: initsqrs,
+      xIsNext: !initxIsNext
+    });
+    initxIsNext = !initxIsNext;
   }
 
   componentDidMount() {
@@ -68,6 +88,9 @@ export default class Game extends React.Component<{}, IGameState> {
         <div className={styles["game-info"]}>
           <div>{status}</div>
         </div>
+        {winner || status == "Draw game" ? (
+          <button onClick={this.handleRestart}>Restart</button>
+        ) : null}
       </div>
     );
   }
