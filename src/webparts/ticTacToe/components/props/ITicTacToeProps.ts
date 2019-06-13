@@ -4,4 +4,5 @@ export interface ITicTacToeProps {
   description: string;
   spHttpClient: SPHttpClient;
   siteUrl: string;
+  loginName: string;
 }

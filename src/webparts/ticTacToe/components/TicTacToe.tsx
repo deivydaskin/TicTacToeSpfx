@@ -65,6 +65,7 @@ interface IState {
   offerOpponentSDP: string;
   answerOfferSDP: string;
   answerAnswerSDP: string;
+  status: string;
 }
 
 export default class TicTacToe extends React.Component<
@@ -80,7 +81,8 @@ export default class TicTacToe extends React.Component<
       offerSDP: "",
       offerOpponentSDP: "",
       answerOfferSDP: "",
-      answerAnswerSDP: ""
+      answerAnswerSDP: "",
+      status: ""
     };
     this.handleClick = this.handleClick.bind(this);
     this.getOfferList = this.getOfferList.bind(this);
@@ -96,12 +98,14 @@ export default class TicTacToe extends React.Component<
         start: !this.state.start
       });
       this.createOffer1();
-      this.postOfferToList();
     }
     if (e.target.id == "joinGame") {
       this.setState({
         join: !this.state.join
       });
+    }
+    if (e.target.id == "offerList") {
+      console.log(e.taget.id);
     }
   }
 
@@ -120,7 +124,7 @@ export default class TicTacToe extends React.Component<
           //   offers: responseJSON.value
           // });
           let temp = [];
-          responseJSON.value.map(e => (temp += e.Name));
+          responseJSON.value.map((e, i) => (temp[i] = e.Name));
           console.log(temp);
           this.setState({ offers: temp });
         });
@@ -129,18 +133,21 @@ export default class TicTacToe extends React.Component<
 
   postOfferToList() {
     //console.log(returnOfferSDP());
+
+    var loginName = this.props.loginName;
+    let offerSD = this.state.offerSDP;
+    console.log(loginName);
     let spOpts: ISPHttpClientOptions = {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json"
       },
-      body: this.state.offerSDP
+      body: offerSD
     };
 
     var url = `${
       this.props.siteUrl
-    }/_api/web/GetFolderByServerRelativeUrl('/ticTacToe')/Files/Add(url='
-      file.name', overwrite=true)`;
+    }/_api/web/GetFolderByServerRelativeUrl('/ticTacToe')/Files/Add(url='${loginName}', overwrite=true)`;
 
     this.props.spHttpClient
       .post(url, SPHttpClient.configurations.v1, spOpts)
@@ -165,7 +172,7 @@ export default class TicTacToe extends React.Component<
         this.setState({
           offerSDP: JSON.stringify(fferSDP)
         });
-        console.log(fferSDP);
+        this.postOfferToList();
       });
 
     dc.onopen = function() {
@@ -173,7 +180,9 @@ export default class TicTacToe extends React.Component<
       // $("#createGame").attr("disabled", true);
       // $("#status").val("CONNECTED!");
       console.log("CONNECTED!");
+      this.setStatus();
     };
+
     dc.onmessage = function(e) {
       if (e.data) {
         let event = new CustomEvent("tic", { detail: e.data });
@@ -181,6 +190,12 @@ export default class TicTacToe extends React.Component<
       }
     };
   }
+
+  setStatus = () => {
+    this.setState({
+      status: "CONNECTED!"
+    });
+  };
 
   start() {
     var answerSDP = this.state.offerOpponentSDP;
@@ -235,6 +250,10 @@ export default class TicTacToe extends React.Component<
   }
 
   public render(): React.ReactElement<ITicTacToeProps> {
+    var data = this.state.offers;
+
+    console.log(data[1]);
+
     return (
       <div className={styles.ticTacToe}>
         <div className={styles.container}>
@@ -246,7 +265,12 @@ export default class TicTacToe extends React.Component<
               Join Game
             </button>
             <legend>Status</legend>
-            <input id='status' disabled value='Not Connected' />
+            <input
+              id='status'
+              disabled
+              value={this.state.status}
+              placeholder='Not Connected.'
+            />
             <div className={styles.column}>
               {this.state.start ? (
                 <div>
@@ -304,7 +328,15 @@ export default class TicTacToe extends React.Component<
                     value={this.state.answerAnswerSDP}
                   />
                   <button onClick={this.getOfferList}>Show Offer List</button>
-                  <ul>{this.state.offers} </ul>
+                  <ul>
+                    {data.map((event, i) => {
+                      return (
+                        <li id='offerList' key={i} onClick={this.handleClick}>
+                          {data[i]}
+                        </li>
+                      );
+                    })}
+                  </ul>
                   <Game />
                 </div>
               ) : null}
