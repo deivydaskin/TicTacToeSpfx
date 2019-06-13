@@ -22,7 +22,9 @@ export default class TicTacToeWebPart extends BaseClientSideWebPart<
     const element: React.ReactElement<ITicTacToeProps> = React.createElement(
       TicTacToe,
       {
-        description: this.properties.description
+        description: this.properties.description,
+        spHttpClient: this.context.spHttpClient,
+        siteUrl: this.context.pageContext.web.absoluteUrl
       }
     );
 

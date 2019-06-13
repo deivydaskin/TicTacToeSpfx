@@ -2,6 +2,14 @@ import $ from "jquery";
 
 var pc = new RTCPeerConnection(null);
 var dc;
+var offer1;
+
+export function returnOfferSDP() {
+  console.log(offer1);
+  setTimeout(() => {
+    return offer1;
+  }, 5000);
+}
 
 export function createOffer() {
   dc = pc.createDataChannel("ticTacToe");
@@ -9,7 +17,10 @@ export function createOffer() {
     .then(function(offer) {
       return pc.setLocalDescription(offer);
     })
-    .then(() => $("#createSDP").val(JSON.stringify(pc.localDescription)));
+    .then(() => {
+      $("#createSDP").val(JSON.stringify(pc.localDescription));
+      return (offer1 = pc.localDescription);
+    });
 
   dc.onopen = function() {
     $("textarea").attr("disabled", true);

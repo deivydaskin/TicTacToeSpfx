@@ -3,8 +3,8 @@ import styles from "./TicTacToe.module.scss";
 import Board from "./Board";
 import calculateWinner from "./Winner";
 import { IGameState } from "./props/IGameState";
-import { sendMSGOffer } from "./OfferSDP";
-import { sendMSGAnswer } from "./AnswerSDP";
+import { sendMSGOffer } from "./TicTacToe";
+import { sendMSGAnswer } from "./TicTacToe";
 
 const initsqrs = [];
 var initxIsNext = true;
