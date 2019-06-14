@@ -11,11 +11,28 @@ import {
   SPHttpClientConfiguration,
   ISPHttpClientOptions
 } from "@microsoft/sp-http";
+import { Fabric } from "office-ui-fabric-react/lib/Fabric";
+import { TextField } from "office-ui-fabric-react/lib/TextField";
+import {
+  DetailsList,
+  DetailsListLayoutMode,
+  Selection,
+  IColumn
+} from "office-ui-fabric-react/lib/DetailsList";
+import { MarqueeSelection } from "office-ui-fabric-react/lib/MarqueeSelection";
+import { mergeStyles } from "office-ui-fabric-react/lib/Styling";
+
+const exampleChildClass = mergeStyles({
+  display: "block",
+  marginBottom: "10px"
+});
 
 var pc, dc;
 var sdpConstraints = { optional: [{ RtpDataChannels: true }] };
 var fferSDP;
 var ejimas = true;
+var isSet = false;
+var lengthOfOffer = 0;
 
 export const sendMSGOffer = (move, xIsNext) => {
   var value = {
@@ -66,14 +83,42 @@ interface IState {
   answerOfferSDP: string;
   answerAnswerSDP: string;
   status: string;
+  selectionDetails: {};
+}
+
+export interface IDetailsListBasicExampleItem {
+  key: number;
+  name: string;
+  value: number;
 }
 
 export default class TicTacToe extends React.Component<
   ITicTacToeProps,
   IState
 > {
+  private _selection: Selection;
+  private _allItems: IDetailsListBasicExampleItem[];
+  private _columns: IColumn[];
+
   constructor(props) {
     super(props);
+
+    this._selection = new Selection({
+      onSelectionChanged: () =>
+        this.setState({ selectionDetails: this._getSelectionDetails() })
+    });
+
+    this._columns = [
+      {
+        key: "column1",
+        name: "Name",
+        fieldName: "name",
+        minWidth: 100,
+        maxWidth: 200,
+        isResizable: true
+      }
+    ];
+
     this.state = {
       start: false,
       join: false,
@@ -82,7 +127,8 @@ export default class TicTacToe extends React.Component<
       offerOpponentSDP: "",
       answerOfferSDP: "",
       answerAnswerSDP: "",
-      status: ""
+      status: "",
+      selectionDetails: this._getSelectionDetails()
     };
     this.handleClick = this.handleClick.bind(this);
     this.getOfferList = this.getOfferList.bind(this);
@@ -90,6 +136,7 @@ export default class TicTacToe extends React.Component<
     this.start = this.start.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.createAnswerSDP = this.createAnswerSDP.bind(this);
+    this.getAnswerSDP = this.getAnswerSDP.bind(this);
   }
 
   private handleClick(e): void {
@@ -124,7 +171,12 @@ export default class TicTacToe extends React.Component<
           //   offers: responseJSON.value
           // });
           let temp = [];
-          responseJSON.value.map((e, i) => (temp[i] = e.Name));
+          responseJSON.value.map((e, i) =>
+            temp.push({
+              key: i,
+              name: e.Name
+            })
+          );
           console.log(temp);
           this.setState({ offers: temp });
         });
@@ -134,7 +186,7 @@ export default class TicTacToe extends React.Component<
   postOfferToList() {
     //console.log(returnOfferSDP());
 
-    var loginName = this.props.loginName;
+    let loginName = this.props.loginName;
     let offerSD = this.state.offerSDP;
     console.log(loginName);
     let spOpts: ISPHttpClientOptions = {
@@ -172,6 +224,7 @@ export default class TicTacToe extends React.Component<
         this.setState({
           offerSDP: JSON.stringify(fferSDP)
         });
+        console.log(JSON.stringify(fferSDP).length);
         this.postOfferToList();
       });
 
@@ -220,13 +273,14 @@ export default class TicTacToe extends React.Component<
     return JSON.parse(this.state.answerOfferSDP);
   }
 
-  createAnswerSDP() {
-    var offerDesc = this.getOfferDesc();
-
+  createAnswerSDP(SDP) {
+    var offerDesc = SDP;
+    let answer;
     pc.setRemoteDescription(offerDesc);
     pc.createAnswer(
       function(answerDesc) {
         pc.setLocalDescription(answerDesc);
+        answer = pc.localDescription;
       },
       function() {
         console.warn("Couldn't create offer");
@@ -236,7 +290,28 @@ export default class TicTacToe extends React.Component<
       this.setState({
         answerAnswerSDP: JSON.stringify(pc.localDescription)
       });
+      console.log(this.state.answerAnswerSDP);
     });
+  }
+
+  private getAnswerSDP() {
+    let loginName = this.props.loginName;
+
+    this.props.spHttpClient
+      .get(
+        `${
+          this.props.siteUrl
+        }/_api/web/GetFolderByServerRelativeUrl('/ticTacToe')/Files('${loginName}')/$value`,
+        SPHttpClient.configurations.v1
+      )
+      .then((response: SPHttpClientResponse) => {
+        //let str = JSON.stringify(response).slice(0,);
+        response.json().then((responseJSON: any) => {
+          this.setState({
+            offerOpponentSDP: JSON.stringify(responseJSON)
+          });
+        });
+      });
   }
 
   componentDidMount() {
@@ -251,6 +326,9 @@ export default class TicTacToe extends React.Component<
 
   public render(): React.ReactElement<ITicTacToeProps> {
     var data = this.state.offers;
+
+    console.log(data);
+    const selectionDetails = this.state.selectionDetails;
 
     console.log(data[1]);
 
@@ -274,13 +352,14 @@ export default class TicTacToe extends React.Component<
             <div className={styles.column}>
               {this.state.start ? (
                 <div>
-                  <legend>Copy this SDP and send it to your opponent</legend>
+                  {/* <legend>Copy this SDP and send it to your opponent</legend>
                   <textarea
                     id='createSDP'
                     placeholder='Your SDP'
                     readOnly
                     value={this.state.offerSDP}
-                  />
+                  /> */}
+                  <button onClick={this.getAnswerSDP}>Get Answer SDP</button>
                   <button
                     id='startBtn'
                     onClick={this.start}
@@ -288,7 +367,7 @@ export default class TicTacToe extends React.Component<
                   >
                     Start
                   </button>
-                  <legend>
+                  {/* <legend>
                     Paste your opponent's SDP here and press 'Start'
                   </legend>
                   <textarea
@@ -297,13 +376,13 @@ export default class TicTacToe extends React.Component<
                     style={{ marginBottom: 20 }}
                     value={this.state.offerOpponentSDP}
                     onChange={this.handleChange}
-                  />
+                  /> */}
                   <Game />
                 </div>
               ) : null}
               {this.state.join ? (
                 <div>
-                  <legend>
+                  {/* <legend>
                     Paste your opponent's SDP here and press 'CreateSDP'
                   </legend>
                   <textarea
@@ -311,7 +390,7 @@ export default class TicTacToe extends React.Component<
                     placeholder='Paste offer SDP'
                     onChange={this.handleChange}
                     value={this.state.answerOfferSDP}
-                  />
+                  /> */}
                   <button
                     id='createSDPBtn'
                     onClick={this.createAnswerSDP}
@@ -319,24 +398,37 @@ export default class TicTacToe extends React.Component<
                   >
                     CreateSDP
                   </button>
-                  <legend>Copy this SDP and send it to your opponent</legend>
+                  {/* <legend>Copy this SDP and send it to your opponent</legend>
                   <textarea
                     id='participantSDP'
                     placeholder='create participant SDP'
                     readOnly
                     style={{ marginBottom: 20 }}
                     value={this.state.answerAnswerSDP}
-                  />
+                  /> */}
                   <button onClick={this.getOfferList}>Show Offer List</button>
-                  <ul>
-                    {data.map((event, i) => {
-                      return (
-                        <li id='offerList' key={i} onClick={this.handleClick}>
-                          {data[i]}
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  <Fabric>
+                    <div className={exampleChildClass}>{selectionDetails}</div>
+                    {/* <TextField
+                      className={exampleChildClass}
+                      label='Filter by name:'
+                      // onChange={this._onFilter}
+                      styles={{ root: { maxWidth: "300px" } }}
+                    /> */}
+                    <MarqueeSelection selection={this._selection}>
+                      <DetailsList
+                        items={data}
+                        columns={this._columns}
+                        setKey='set'
+                        layoutMode={DetailsListLayoutMode.fixedColumns}
+                        selection={this._selection}
+                        selectionPreservedOnEmptyClick={true}
+                        ariaLabelForSelectionColumn='Toggle selection'
+                        ariaLabelForSelectAllCheckbox='Toggle selection for all items'
+                        onItemInvoked={this._onItemInvoked}
+                      />
+                    </MarqueeSelection>
+                  </Fabric>
                   <Game />
                 </div>
               ) : null}
@@ -345,5 +437,92 @@ export default class TicTacToe extends React.Component<
         </div>
       </div>
     );
+  }
+
+  private _getSelectionDetails(): string {
+    const selectionCount = this._selection.getSelectedCount();
+
+    switch (selectionCount) {
+      case 0:
+        return "No items selected";
+      case 1:
+        return (
+          "1 item selected: " +
+          (this._selection.getSelection()[0] as IDetailsListBasicExampleItem)
+            .name
+        );
+      default:
+        return `${selectionCount} items selected`;
+    }
+  }
+
+  // private _onFilter = (
+  //   ev: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>,
+  //   text: string
+  // ): void => {
+  //   this.setState({
+  //     items: text
+  //       ? this._allItems.filter(i => i.name.toLowerCase().indexOf(text) > -1)
+  //       : this._allItems
+  //   });
+  // };
+
+  private _onItemInvoked = (item: IDetailsListBasicExampleItem): void => {
+    this.getFileOffer(item.name);
+  };
+
+  private getFileOffer(item) {
+    let responseString = "";
+
+    this.props.spHttpClient
+      .get(
+        `${
+          this.props.siteUrl
+        }/_api/web/GetFolderByServerRelativeUrl('/ticTacToe')/Files('${item}')/$value`,
+        SPHttpClient.configurations.v1
+      )
+      .then((response: SPHttpClientResponse) => {
+        //let str = JSON.stringify(response).slice(0,);
+        response.json().then((responseJSON: any) => {
+          this.setState({
+            answerOfferSDP: JSON.stringify(responseJSON)
+          });
+          this.createAnswerSDP(responseJSON);
+        });
+      })
+      .then(() => {
+        if (
+          this.state.answerAnswerSDP &&
+          this.state.answerAnswerSDP !== "null"
+        ) {
+          this.sendAnswerSDP(item);
+          console.log("checked");
+        }
+      });
+  }
+
+  private sendAnswerSDP(item) {
+    let spOpts: ISPHttpClientOptions = {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      body: this.state.answerAnswerSDP
+    };
+
+    var url = `${
+      this.props.siteUrl
+    }/_api/web/GetFolderByServerRelativeUrl('/ticTacToe')/Files/Add(url='${item}', overwrite=true)`;
+
+    this.props.spHttpClient
+      .post(url, SPHttpClient.configurations.v1, spOpts)
+      .then((response: SPHttpClientResponse) => {
+        console.log(`Status code: ${response.status}`);
+        console.log(`Status text: ${response.statusText}`);
+
+        response.json().then((responseJSON: JSON) => {
+          console.log(responseJSON);
+        });
+      });
   }
 }
