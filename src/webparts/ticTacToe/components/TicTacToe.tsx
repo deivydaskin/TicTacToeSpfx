@@ -21,6 +21,11 @@ import {
 } from "office-ui-fabric-react/lib/DetailsList";
 import { MarqueeSelection } from "office-ui-fabric-react/lib/MarqueeSelection";
 import { mergeStyles } from "office-ui-fabric-react/lib/Styling";
+import {
+  ListSubscriptionFactory,
+  IListSubscription
+} from "@microsoft/sp-list-subscription";
+import { Guid } from "@microsoft/sp-core-library";
 
 const exampleChildClass = mergeStyles({
   display: "block",
@@ -99,6 +104,8 @@ export default class TicTacToe extends React.Component<
   private _selection: Selection;
   private _allItems: IDetailsListBasicExampleItem[];
   private _columns: IColumn[];
+  _listSubscriptionFactory: ListSubscriptionFactory;
+  _listSubscription: IListSubscription;
 
   constructor(props) {
     super(props);
@@ -314,7 +321,29 @@ export default class TicTacToe extends React.Component<
       });
   }
 
+  createListSubscription(): void {
+    console.log("Subscription connected!");
+    this._listSubscriptionFactory = new ListSubscriptionFactory(this.context);
+    this._listSubscription = this._listSubscriptionFactory.createSubscription({
+      listId: Guid.parse(this.props.libraryId),
+      callbacks: {
+        notification: this._loadDocuments.bind(this),
+        connect: this._subscriptionConnected.bind(this)
+      }
+    });
+  }
+
+  private _subscriptionConnected(): void {
+    console.log("Subscription connected!");
+  }
+
+  private _loadDocuments(): void {
+    console.log("got new subscription notification!");
+  }
+
   componentDidMount() {
+    //this.createListSubscription.bind(this);
+
     pc = new RTCPeerConnection(null);
     dc;
 
