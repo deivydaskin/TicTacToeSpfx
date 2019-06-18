@@ -7,4 +7,5 @@ export interface ITicTacToeProps {
   siteUrl: string;
   loginName: string;
   libraryId: string;
+  listSubscriptionFactory: ListSubscriptionFactory;
 }

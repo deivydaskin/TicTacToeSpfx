@@ -3,8 +3,7 @@ import styles from "./TicTacToe.module.scss";
 import Board from "./Board";
 import calculateWinner from "./Winner";
 import { IGameState } from "./props/IGameState";
-import { sendMSGOffer } from "./TicTacToe";
-import { sendMSGAnswer } from "./TicTacToe";
+import { sendMSG } from "./TicTacToe";
 
 const initsqrs = [];
 var initxIsNext = true;
@@ -30,10 +29,8 @@ export default class Game extends React.Component<{}, IGameState> {
       return;
     }
     squares[i] = this.state.xIsNext ? "X" : "O";
-    this.state.xIsNext
-      ? sendMSGOffer(squares, !this.state.xIsNext)
-      : sendMSGAnswer(squares, !this.state.xIsNext);
-
+    let check = sendMSG(squares, !this.state.xIsNext);
+    if (check) return;
     this.setState({
       squares: squares,
       xIsNext: !this.state.xIsNext

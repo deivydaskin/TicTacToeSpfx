@@ -16,6 +16,7 @@ import {
   PropertyFieldListPickerOrderBy
 } from "@pnp/spfx-property-controls/lib/PropertyFieldListPicker";
 import { CalloutTriggers } from "@pnp/spfx-property-controls/lib/PropertyFieldHeader";
+import { ListSubscriptionFactory } from "@microsoft/sp-list-subscription";
 
 export interface ITicTacToeWebPartProps {
   description: string;
@@ -34,7 +35,8 @@ export default class TicTacToeWebPart extends BaseClientSideWebPart<
         spHttpClient: this.context.spHttpClient,
         siteUrl: this.context.pageContext.web.absoluteUrl,
         loginName: this.context.pageContext.user.displayName,
-        libraryId: this.properties.tictactoeLibraryId
+        libraryId: this.properties.tictactoeLibraryId,
+        listSubscriptionFactory: new ListSubscriptionFactory(this)
       }
     );
 
@@ -54,7 +56,8 @@ export default class TicTacToeWebPart extends BaseClientSideWebPart<
       pages: [
         {
           header: {
-            description: strings.PropertyPaneDescription
+            description:
+              "URL of the site where the document library to show documents from is located. Leave empty to connect to a document library from the current site"
           },
           groups: [
             {

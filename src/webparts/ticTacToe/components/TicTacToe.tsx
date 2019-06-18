@@ -2,17 +2,12 @@ import * as React from "react";
 import styles from "./TicTacToe.module.scss";
 import { ITicTacToeProps } from "./props/ITicTacToeProps";
 import Game from "./Game";
-//import { createOffer, start, returnOfferSDP } from "./OfferSDP";
-//import createAnswerSDP from "./AnswerSDP";
-//import API from "./API";
 import {
   SPHttpClient,
   SPHttpClientResponse,
-  SPHttpClientConfiguration,
   ISPHttpClientOptions
 } from "@microsoft/sp-http";
 import { Fabric } from "office-ui-fabric-react/lib/Fabric";
-import { TextField } from "office-ui-fabric-react/lib/TextField";
 import {
   DetailsList,
   DetailsListLayoutMode,
@@ -26,6 +21,7 @@ import {
   IListSubscription
 } from "@microsoft/sp-list-subscription";
 import { Guid } from "@microsoft/sp-core-library";
+import { PrimaryButton } from "office-ui-fabric-react";
 
 const exampleChildClass = mergeStyles({
   display: "block",
@@ -35,41 +31,32 @@ const exampleChildClass = mergeStyles({
 var pc, dc;
 var sdpConstraints = { optional: [{ RtpDataChannels: true }] };
 var fferSDP;
-var ejimas = true;
-var isSet = false;
-var lengthOfOffer = 0;
 
-export const sendMSGOffer = (move, xIsNext) => {
-  var value = {
-    figures: move,
-    xIsNext: xIsNext
-  };
-  if (ejimas) {
+export const sendMSG = (move, xIsNext) => {
+  if (pc.localDescription.type == "answer" && xIsNext) {
+    var value = {
+      figures: move,
+      xIsNext: xIsNext
+    };
     if (value) {
       dc.send(JSON.stringify(value));
     }
-  }
-  ejimas = !ejimas;
-};
-
-export const sendMSGAnswer = (move, xIsNext) => {
-  var value = {
-    figures: move,
-    xIsNext: xIsNext
-  };
-  if (!ejimas) {
+  } else if (pc.localDescription.type == "offer" && !xIsNext) {
+    var value = {
+      figures: move,
+      xIsNext: xIsNext
+    };
     if (value) {
       dc.send(JSON.stringify(value));
     }
+  } else {
+    return "Not your move";
   }
-  ejimas = !ejimas;
 };
 
 function dcInit(dc) {
   dc.onopen = function() {
-    // $("textarea").attr("disabled", true);
-    // $("#joinGame").attr("disabled", true);
-    // $("#status").val("CONNECTED!");
+    console.log("Connected");
   };
   dc.onmessage = function(e) {
     if (e.data) {
@@ -80,8 +67,8 @@ function dcInit(dc) {
 }
 
 interface IState {
-  start: boolean;
-  join: boolean;
+  startGame: boolean;
+  joinGame: boolean;
   offers: string[];
   offerSDP: string;
   offerOpponentSDP: string;
@@ -89,6 +76,7 @@ interface IState {
   answerAnswerSDP: string;
   status: string;
   selectionDetails: {};
+  offerList: boolean;
 }
 
 export interface IDetailsListBasicExampleItem {
@@ -127,16 +115,18 @@ export default class TicTacToe extends React.Component<
     ];
 
     this.state = {
-      start: false,
-      join: false,
+      startGame: false,
+      joinGame: false,
       offers: [],
       offerSDP: "",
       offerOpponentSDP: "",
       answerOfferSDP: "",
       answerAnswerSDP: "",
       status: "",
-      selectionDetails: this._getSelectionDetails()
+      selectionDetails: this._getSelectionDetails(),
+      offerList: false
     };
+
     this.handleClick = this.handleClick.bind(this);
     this.getOfferList = this.getOfferList.bind(this);
     this.createOffer1 = this.createOffer1.bind(this);
@@ -144,27 +134,34 @@ export default class TicTacToe extends React.Component<
     this.handleChange = this.handleChange.bind(this);
     this.createAnswerSDP = this.createAnswerSDP.bind(this);
     this.getAnswerSDP = this.getAnswerSDP.bind(this);
+    this.createListSubscription = this.createListSubscription.bind(this);
+    this.setStatus = this.setStatus.bind(this);
   }
 
   private handleClick(e): void {
     if (e.target.id == "createGame") {
       this.setState({
-        start: !this.state.start
+        startGame: !this.state.startGame
       });
       this.createOffer1();
+      this.createListSubscription();
     }
     if (e.target.id == "joinGame") {
       this.setState({
-        join: !this.state.join
+        joinGame: !this.state.joinGame
       });
+      this.createListSubscription();
+      pc.ondatachannel = function(e) {
+        dc = e.channel;
+        dcInit(dc);
+      };
     }
-    if (e.target.id == "offerList") {
-      console.log(e.taget.id);
+    if (e.target.id == "hideOfferList") {
+      this.setState({ offerList: false });
     }
   }
 
   getOfferList() {
-    ///_api/web/GetFolderByServerRelativeUrl('/ticTacToe')/Files('tictactest.json')/$value
     this.props.spHttpClient
       .get(
         `${
@@ -174,9 +171,6 @@ export default class TicTacToe extends React.Component<
       )
       .then((response: SPHttpClientResponse) => {
         response.json().then((responseJSON: any) => {
-          // this.setState({
-          //   offers: responseJSON.value
-          // });
           let temp = [];
           responseJSON.value.map((e, i) =>
             temp.push({
@@ -184,18 +178,15 @@ export default class TicTacToe extends React.Component<
               name: e.Name
             })
           );
-          console.log(temp);
           this.setState({ offers: temp });
         });
       });
+    this.setState({ offerList: true });
   }
 
   postOfferToList() {
-    //console.log(returnOfferSDP());
-
     let loginName = this.props.loginName;
     let offerSD = this.state.offerSDP;
-    console.log(loginName);
     let spOpts: ISPHttpClientOptions = {
       headers: {
         Accept: "application/json",
@@ -231,35 +222,21 @@ export default class TicTacToe extends React.Component<
         this.setState({
           offerSDP: JSON.stringify(fferSDP)
         });
-        console.log(JSON.stringify(fferSDP).length);
         this.postOfferToList();
       });
-
-    dc.onopen = function() {
-      // $("textarea").attr("disabled", true);
-      // $("#createGame").attr("disabled", true);
-      // $("#status").val("CONNECTED!");
-      console.log("CONNECTED!");
-      this.setStatus();
-    };
-
-    dc.onmessage = function(e) {
-      if (e.data) {
-        let event = new CustomEvent("tic", { detail: e.data });
-        document.dispatchEvent(event);
-      }
-    };
+    dcInit(dc);
   }
 
-  setStatus = () => {
+  setStatus() {
     this.setState({
       status: "CONNECTED!"
     });
-  };
+  }
 
   start() {
-    var answerSDP = this.state.offerOpponentSDP;
-    var answerDesc = new RTCSessionDescription(JSON.parse(answerSDP));
+    var answerDesc = new RTCSessionDescription(
+      JSON.parse(this.state.offerOpponentSDP)
+    );
     pc.setRemoteDescription(answerDesc);
   }
 
@@ -276,29 +253,22 @@ export default class TicTacToe extends React.Component<
     }
   }
 
-  getOfferDesc() {
-    return JSON.parse(this.state.answerOfferSDP);
-  }
+  createAnswerSDP(SDP, item) {
+    var offerDesc = new RTCSessionDescription(SDP);
 
-  createAnswerSDP(SDP) {
-    var offerDesc = SDP;
-    let answer;
     pc.setRemoteDescription(offerDesc);
-    pc.createAnswer(
-      function(answerDesc) {
-        pc.setLocalDescription(answerDesc);
-        answer = pc.localDescription;
-      },
-      function() {
-        console.warn("Couldn't create offer");
-      },
-      sdpConstraints
-    ).then(() => {
-      this.setState({
-        answerAnswerSDP: JSON.stringify(pc.localDescription)
+    pc.createAnswer(sdpConstraints)
+      .then(function(answer) {
+        return pc.setLocalDescription(answer);
+      })
+      .then(() => {
+        this.setState({
+          answerAnswerSDP: JSON.stringify(pc.localDescription)
+        });
+      })
+      .then(() => {
+        this.sendAnswerSDP(pc.localDescription, item);
       });
-      console.log(this.state.answerAnswerSDP);
-    });
   }
 
   private getAnswerSDP() {
@@ -312,7 +282,6 @@ export default class TicTacToe extends React.Component<
         SPHttpClient.configurations.v1
       )
       .then((response: SPHttpClientResponse) => {
-        //let str = JSON.stringify(response).slice(0,);
         response.json().then((responseJSON: any) => {
           this.setState({
             offerOpponentSDP: JSON.stringify(responseJSON)
@@ -321,56 +290,99 @@ export default class TicTacToe extends React.Component<
       });
   }
 
-  createListSubscription(): void {
-    console.log("Subscription connected!");
-    this._listSubscriptionFactory = new ListSubscriptionFactory(this.context);
-    this._listSubscription = this._listSubscriptionFactory.createSubscription({
-      listId: Guid.parse(this.props.libraryId),
-      callbacks: {
-        notification: this._loadDocuments.bind(this),
-        connect: this._subscriptionConnected.bind(this)
-      }
-    });
-  }
+  private createListSubscription(): void {
+    this._listSubscriptionFactory = this.props.listSubscriptionFactory;
 
-  private _subscriptionConnected(): void {
-    console.log("Subscription connected!");
+    this._listSubscriptionFactory
+      .createSubscription({
+        listId: Guid.parse(this.props.libraryId),
+
+        callbacks: {
+          notification: this._loadDocuments.bind(this),
+        }
+      })
+      .then(listSubscription => {
+        this._listSubscription = listSubscription;
+      });
   }
 
   private _loadDocuments(): void {
-    console.log("got new subscription notification!");
+    if (this.state.joinGame) {
+      console.log(
+        "Got a new game offer! Press 'Show offers' to refresh the list"
+      );
+    }
+    if (this.state.startGame) {
+      let loginName = this.props.loginName;
+
+      this.props.spHttpClient
+        .get(
+          `${
+            this.props.siteUrl
+          }/_api/web/GetFolderByServerRelativeUrl('/ticTacToe')/Files('${loginName}')/$value`,
+          SPHttpClient.configurations.v1
+        )
+        .then((response: SPHttpClientResponse) => {
+          response.json().then((responseJSON: any) => {
+            if (responseJSON.type == "answer") {
+              this.setState({
+                offerOpponentSDP: JSON.stringify(responseJSON)
+              });
+              console.log(
+                "Your offer has been accepted! Press 'Start' to start the game"
+              );
+            }
+          });
+        });
+    }
   }
 
   componentDidMount() {
-    //this.createListSubscription.bind(this);
-
     pc = new RTCPeerConnection(null);
-    dc;
+  }
 
-    pc.ondatachannel = function(e) {
-      dc = e.channel;
-      dcInit(dc);
+  componentWillUnmount() {
+    let loginName = this.props.loginName;
+    let spOpts: ISPHttpClientOptions = {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "IF-MATCH": "etag or '*'",
+        "X-HTTP-Method": "DELETE"
+      },
+      body: this.state.answerAnswerSDP
     };
+
+    var url = `${
+      this.props.siteUrl
+    }/_api/web/GetFileByServerRelativeUrl('/ticTacToe/${loginName}')`;
+
+    this.props.spHttpClient
+      .post(url, SPHttpClient.configurations.v1, spOpts)
+      .then((response: SPHttpClientResponse) => {
+        console.log(`Status code: ${response.status}`);
+        console.log(`Status text: ${response.statusText}`);
+
+        response.json().then((responseJSON: JSON) => {
+          console.log(responseJSON);
+        });
+      });
   }
 
   public render(): React.ReactElement<ITicTacToeProps> {
     var data = this.state.offers;
-
-    console.log(data);
     const selectionDetails = this.state.selectionDetails;
-
-    console.log(data[1]);
 
     return (
       <div className={styles.ticTacToe}>
         <div className={styles.container}>
           <div className={styles.row}>
-            <button id='createGame' onClick={this.handleClick}>
+            <PrimaryButton id='createGame' onClick={this.handleClick}>
               Create Game
-            </button>
-            <button id='joinGame' onClick={this.handleClick}>
+            </PrimaryButton>
+            <PrimaryButton id='joinGame' onClick={this.handleClick}>
               Join Game
-            </button>
+            </PrimaryButton>
             <legend>Status</legend>
             <input
               id='status'
@@ -379,85 +391,46 @@ export default class TicTacToe extends React.Component<
               placeholder='Not Connected.'
             />
             <div className={styles.column}>
-              {this.state.start ? (
+              {this.state.startGame ? (
                 <div>
-                  {/* <legend>Copy this SDP and send it to your opponent</legend>
-                  <textarea
-                    id='createSDP'
-                    placeholder='Your SDP'
-                    readOnly
-                    value={this.state.offerSDP}
-                  /> */}
-                  <button onClick={this.getAnswerSDP}>Get Answer SDP</button>
-                  <button
+                  <PrimaryButton
                     id='startBtn'
                     onClick={this.start}
                     style={{ margin: 10 }}
                   >
                     Start
-                  </button>
-                  {/* <legend>
-                    Paste your opponent's SDP here and press 'Start'
-                  </legend>
-                  <textarea
-                    id='getSDP'
-                    placeholder="Get your opponenet's SDP"
-                    style={{ marginBottom: 20 }}
-                    value={this.state.offerOpponentSDP}
-                    onChange={this.handleChange}
-                  /> */}
+                  </PrimaryButton>
                   <Game />
                 </div>
               ) : null}
-              {this.state.join ? (
+              {this.state.joinGame ? (
                 <div>
-                  {/* <legend>
-                    Paste your opponent's SDP here and press 'CreateSDP'
-                  </legend>
-                  <textarea
-                    id='offerSDP'
-                    placeholder='Paste offer SDP'
-                    onChange={this.handleChange}
-                    value={this.state.answerOfferSDP}
-                  /> */}
-                  <button
-                    id='createSDPBtn'
-                    onClick={this.createAnswerSDP}
-                    style={{ margin: 10 }}
-                  >
-                    CreateSDP
-                  </button>
-                  {/* <legend>Copy this SDP and send it to your opponent</legend>
-                  <textarea
-                    id='participantSDP'
-                    placeholder='create participant SDP'
-                    readOnly
-                    style={{ marginBottom: 20 }}
-                    value={this.state.answerAnswerSDP}
-                  /> */}
-                  <button onClick={this.getOfferList}>Show Offer List</button>
-                  <Fabric>
-                    <div className={exampleChildClass}>{selectionDetails}</div>
-                    {/* <TextField
-                      className={exampleChildClass}
-                      label='Filter by name:'
-                      // onChange={this._onFilter}
-                      styles={{ root: { maxWidth: "300px" } }}
-                    /> */}
-                    <MarqueeSelection selection={this._selection}>
-                      <DetailsList
-                        items={data}
-                        columns={this._columns}
-                        setKey='set'
-                        layoutMode={DetailsListLayoutMode.fixedColumns}
-                        selection={this._selection}
-                        selectionPreservedOnEmptyClick={true}
-                        ariaLabelForSelectionColumn='Toggle selection'
-                        ariaLabelForSelectAllCheckbox='Toggle selection for all items'
-                        onItemInvoked={this._onItemInvoked}
-                      />
-                    </MarqueeSelection>
-                  </Fabric>
+                  <PrimaryButton onClick={this.getOfferList}>
+                    Show Offer List
+                  </PrimaryButton>
+                  <PrimaryButton id='hideOfferList' onClick={this.handleClick}>
+                    Hide Offer List
+                  </PrimaryButton>
+                  {this.state.offerList ? (
+                    <Fabric>
+                      <div className={exampleChildClass}>
+                        {selectionDetails}
+                      </div>
+                      <MarqueeSelection selection={this._selection}>
+                        <DetailsList
+                          items={data}
+                          columns={this._columns}
+                          setKey='set'
+                          layoutMode={DetailsListLayoutMode.fixedColumns}
+                          selection={this._selection}
+                          selectionPreservedOnEmptyClick={true}
+                          ariaLabelForSelectionColumn='Toggle selection'
+                          ariaLabelForSelectAllCheckbox='Toggle selection for all items'
+                          onItemInvoked={this._onItemInvoked}
+                        />
+                      </MarqueeSelection>
+                    </Fabric>
+                  ) : null}
                   <Game />
                 </div>
               ) : null}
@@ -485,24 +458,11 @@ export default class TicTacToe extends React.Component<
     }
   }
 
-  // private _onFilter = (
-  //   ev: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>,
-  //   text: string
-  // ): void => {
-  //   this.setState({
-  //     items: text
-  //       ? this._allItems.filter(i => i.name.toLowerCase().indexOf(text) > -1)
-  //       : this._allItems
-  //   });
-  // };
-
   private _onItemInvoked = (item: IDetailsListBasicExampleItem): void => {
     this.getFileOffer(item.name);
   };
 
   private getFileOffer(item) {
-    let responseString = "";
-
     this.props.spHttpClient
       .get(
         `${
@@ -511,32 +471,22 @@ export default class TicTacToe extends React.Component<
         SPHttpClient.configurations.v1
       )
       .then((response: SPHttpClientResponse) => {
-        //let str = JSON.stringify(response).slice(0,);
         response.json().then((responseJSON: any) => {
           this.setState({
             answerOfferSDP: JSON.stringify(responseJSON)
           });
-          this.createAnswerSDP(responseJSON);
+          this.createAnswerSDP(responseJSON, item);
         });
-      })
-      .then(() => {
-        if (
-          this.state.answerAnswerSDP &&
-          this.state.answerAnswerSDP !== "null"
-        ) {
-          this.sendAnswerSDP(item);
-          console.log("checked");
-        }
       });
   }
 
-  private sendAnswerSDP(item) {
+  private sendAnswerSDP(description, item) {
     let spOpts: ISPHttpClientOptions = {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json"
       },
-      body: this.state.answerAnswerSDP
+      body: JSON.stringify(description)
     };
 
     var url = `${
