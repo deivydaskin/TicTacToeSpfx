@@ -4,7 +4,7 @@ import Square from "./Square";
 import { IBoardProps } from "./props/IBoardProps";
 
 export default class Board extends React.Component<IBoardProps, {}> {
-  renderSquare(i: number) {
+  private renderSquare(i: number) {
     return (
       <Square
         value={this.props.squares[i]}
@@ -13,7 +13,7 @@ export default class Board extends React.Component<IBoardProps, {}> {
     );
   }
 
-  render() {
+  public render() {
     return (
       <div>
         <div className={styles["board-row"]}>

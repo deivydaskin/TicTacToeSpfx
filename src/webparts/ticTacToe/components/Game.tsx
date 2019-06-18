@@ -3,11 +3,15 @@ import styles from "./TicTacToe.module.scss";
 import Board from "./Board";
 import calculateWinner from "./Winner";
 import { IGameState } from "./props/IGameState";
+import { sendMSG } from "./TicTacToe";
+
+const initsqrs = [];
+var initxIsNext = true;
 
 export default class Game extends React.Component<{}, IGameState> {
   constructor(props) {
     super(props);
-    const initsqrs = [];
+
     for (let i = 0; i < 9; i++) {
       initsqrs[i] = null;
     }
@@ -15,21 +19,45 @@ export default class Game extends React.Component<{}, IGameState> {
       squares: initsqrs,
       xIsNext: true
     };
+
+    this.handleRestart = this.handleRestart.bind(this);
   }
 
-  handleClick(i: number) {
+  private handleClick(i: number): void {
     const squares = this.state.squares.slice();
     if (calculateWinner(squares) || squares[i]) {
       return;
     }
     squares[i] = this.state.xIsNext ? "X" : "O";
+    let check = sendMSG(squares, !this.state.xIsNext);
+    if (check) return;
     this.setState({
       squares: squares,
       xIsNext: !this.state.xIsNext
     });
   }
 
-  render() {
+  private handleCustomEvent(e): void {
+    let event = JSON.parse(e.detail);
+    this.setState({
+      squares: event.figures,
+      xIsNext: event.xIsNext
+    });
+  }
+
+  private handleRestart(): void {
+    this.setState({
+      squares: initsqrs,
+      xIsNext: !initxIsNext
+    });
+    initxIsNext = !initxIsNext;
+  }
+
+  componentDidMount() {
+    document.addEventListener("tic", e => this.handleCustomEvent(e));
+  }
+
+  public render() {
     const winner = calculateWinner(this.state.squares);
 
     let status: string;
@@ -54,6 +82,9 @@ export default class Game extends React.Component<{}, IGameState> {
         <div className={styles["game-info"]}>
           <div>{status}</div>
         </div>
+        {winner || status == "Draw game" ? (
+          <button onClick={this.handleRestart}>Restart</button>
+        ) : null}
       </div>
     );
   }
