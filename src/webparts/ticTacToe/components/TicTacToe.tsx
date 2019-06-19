@@ -11,22 +11,18 @@ import { Fabric } from "office-ui-fabric-react/lib/Fabric";
 import {
   DetailsList,
   DetailsListLayoutMode,
-  Selection,
   IColumn
 } from "office-ui-fabric-react/lib/DetailsList";
-import { MarqueeSelection } from "office-ui-fabric-react/lib/MarqueeSelection";
-import { mergeStyles } from "office-ui-fabric-react/lib/Styling";
 import {
   ListSubscriptionFactory,
   IListSubscription
 } from "@microsoft/sp-list-subscription";
 import { Guid } from "@microsoft/sp-core-library";
 import { PrimaryButton } from "office-ui-fabric-react";
-
-const exampleChildClass = mergeStyles({
-  display: "block",
-  marginBottom: "10px"
-});
+import {
+  MessageBar,
+  MessageBarType
+} from "office-ui-fabric-react/lib/MessageBar";
 
 var pc, dc;
 var sdpConstraints = { optional: [{ RtpDataChannels: true }] };
@@ -55,8 +51,8 @@ export const sendMSG = (move, xIsNext) => {
 };
 
 function dcInit(dc) {
-  dc.onopen = function() {
-    console.log("Connected");
+  dc.onopen = () => {
+    alert("Connected");
   };
   dc.onmessage = function(e) {
     if (e.data) {
@@ -74,9 +70,8 @@ interface IState {
   offerOpponentSDP: string;
   answerOfferSDP: string;
   answerAnswerSDP: string;
-  status: string;
-  selectionDetails: {};
   offerList: boolean;
+  notification: boolean;
 }
 
 export interface IDetailsListBasicExampleItem {
@@ -89,19 +84,12 @@ export default class TicTacToe extends React.Component<
   ITicTacToeProps,
   IState
 > {
-  private _selection: Selection;
-  private _allItems: IDetailsListBasicExampleItem[];
   private _columns: IColumn[];
   _listSubscriptionFactory: ListSubscriptionFactory;
   _listSubscription: IListSubscription;
 
   constructor(props) {
     super(props);
-
-    this._selection = new Selection({
-      onSelectionChanged: () =>
-        this.setState({ selectionDetails: this._getSelectionDetails() })
-    });
 
     this._columns = [
       {
@@ -122,9 +110,8 @@ export default class TicTacToe extends React.Component<
       offerOpponentSDP: "",
       answerOfferSDP: "",
       answerAnswerSDP: "",
-      status: "",
-      selectionDetails: this._getSelectionDetails(),
-      offerList: false
+      offerList: false,
+      notification: false
     };
 
     this.handleClick = this.handleClick.bind(this);
@@ -135,18 +122,19 @@ export default class TicTacToe extends React.Component<
     this.createAnswerSDP = this.createAnswerSDP.bind(this);
     this.getAnswerSDP = this.getAnswerSDP.bind(this);
     this.createListSubscription = this.createListSubscription.bind(this);
-    this.setStatus = this.setStatus.bind(this);
+    this.dismissNotification = this.dismissNotification.bind(this);
   }
 
   private handleClick(e): void {
-    if (e.target.id == "createGame") {
+    console.log(e);
+    if (e == "createGame") {
       this.setState({
         startGame: !this.state.startGame
       });
       this.createOffer1();
       this.createListSubscription();
     }
-    if (e.target.id == "joinGame") {
+    if (e == "joinGame") {
       this.setState({
         joinGame: !this.state.joinGame
       });
@@ -156,8 +144,12 @@ export default class TicTacToe extends React.Component<
         dcInit(dc);
       };
     }
-    if (e.target.id == "hideOfferList") {
-      this.setState({ offerList: false });
+    if (e == "hideOfferList") {
+      if (this.state.offerList) {
+        this.setState({ offerList: false });
+      } else {
+        this.getOfferList();
+      }
     }
   }
 
@@ -227,12 +219,6 @@ export default class TicTacToe extends React.Component<
     dcInit(dc);
   }
 
-  setStatus() {
-    this.setState({
-      status: "CONNECTED!"
-    });
-  }
-
   start() {
     var answerDesc = new RTCSessionDescription(
       JSON.parse(this.state.offerOpponentSDP)
@@ -298,7 +284,7 @@ export default class TicTacToe extends React.Component<
         listId: Guid.parse(this.props.libraryId),
 
         callbacks: {
-          notification: this._loadDocuments.bind(this),
+          notification: this._loadDocuments.bind(this)
         }
       })
       .then(listSubscription => {
@@ -308,9 +294,9 @@ export default class TicTacToe extends React.Component<
 
   private _loadDocuments(): void {
     if (this.state.joinGame) {
-      console.log(
-        "Got a new game offer! Press 'Show offers' to refresh the list"
-      );
+      this.setState({
+        notification: true
+      });
     }
     if (this.state.startGame) {
       let loginName = this.props.loginName;
@@ -326,11 +312,9 @@ export default class TicTacToe extends React.Component<
           response.json().then((responseJSON: any) => {
             if (responseJSON.type == "answer") {
               this.setState({
-                offerOpponentSDP: JSON.stringify(responseJSON)
+                offerOpponentSDP: JSON.stringify(responseJSON),
+                notification: true
               });
-              console.log(
-                "Your offer has been accepted! Press 'Start' to start the game"
-              );
             }
           });
         });
@@ -369,66 +353,89 @@ export default class TicTacToe extends React.Component<
       });
   }
 
+  dismissNotification() {
+    this.setState({
+      notification: false
+    });
+  }
+
   public render(): React.ReactElement<ITicTacToeProps> {
     var data = this.state.offers;
-    const selectionDetails = this.state.selectionDetails;
 
     return (
-      <div className={styles.ticTacToe}>
-        <div className={styles.container}>
-          <div className={styles.row}>
-            <PrimaryButton id='createGame' onClick={this.handleClick}>
-              Create Game
-            </PrimaryButton>
-            <PrimaryButton id='joinGame' onClick={this.handleClick}>
-              Join Game
-            </PrimaryButton>
-            <legend>Status</legend>
-            <input
-              id='status'
-              disabled
-              value={this.state.status}
-              placeholder='Not Connected.'
-            />
-            <div className={styles.column}>
+      <Fabric>
+        <div className={styles.ticTacToe}>
+          <div className={styles.container}>
+            <div className={styles.row}>
+              <div className={styles.startWindow}>
+                <PrimaryButton
+                  id='createGame'
+                  text='Create Game'
+                  onClick={() => this.handleClick("createGame")}
+                />
+                <PrimaryButton
+                  id='joinGame'
+                  text='Join Game'
+                  onClick={() => this.handleClick("joinGame")}
+                />
+              </div>
+
               {this.state.startGame ? (
-                <div>
+                <div className={styles.gameWindow}>
+                  {this.state.notification ? (
+                    <MessageBar
+                      onDismiss={this.dismissNotification}
+                      dismissButtonAriaLabel='Close'
+                    >
+                      Your offer has been accepted! Press 'Start' to start the
+                      game
+                    </MessageBar>
+                  ) : null}
                   <PrimaryButton
                     id='startBtn'
+                    text='Start'
                     onClick={this.start}
                     style={{ margin: 10 }}
-                  >
-                    Start
-                  </PrimaryButton>
+                  />
                   <Game />
                 </div>
               ) : null}
               {this.state.joinGame ? (
-                <div>
-                  <PrimaryButton onClick={this.getOfferList}>
-                    Show Offer List
-                  </PrimaryButton>
-                  <PrimaryButton id='hideOfferList' onClick={this.handleClick}>
-                    Hide Offer List
-                  </PrimaryButton>
+                <div className={styles.gameWindow}>
+                  {this.state.notification ? (
+                    <MessageBar
+                      onDismiss={this.dismissNotification}
+                      dismissButtonAriaLabel='Close'
+                    >
+                      Got a new game offer! Press 'Show Offer List' to refresh
+                      the list
+                    </MessageBar>
+                  ) : null}
+                  <PrimaryButton
+                    id='hideOfferList'
+                    data-automation-id='test'
+                    allowDisabledFocus={true}
+                    toggle={true}
+                    text={
+                      this.state.offerList
+                        ? "Hide Offer List"
+                        : "Show Offer List"
+                    }
+                    onClick={() => this.handleClick("hideOfferList")}
+                    style={{ margin: 10 }}
+                  />
                   {this.state.offerList ? (
-                    <Fabric>
-                      <div className={exampleChildClass}>
-                        {selectionDetails}
-                      </div>
-                      <MarqueeSelection selection={this._selection}>
-                        <DetailsList
-                          items={data}
-                          columns={this._columns}
-                          setKey='set'
-                          layoutMode={DetailsListLayoutMode.fixedColumns}
-                          selection={this._selection}
-                          selectionPreservedOnEmptyClick={true}
-                          ariaLabelForSelectionColumn='Toggle selection'
-                          ariaLabelForSelectAllCheckbox='Toggle selection for all items'
-                          onItemInvoked={this._onItemInvoked}
-                        />
-                      </MarqueeSelection>
+                    <Fabric style={{ margin: 10 }}>
+                      <DetailsList
+                        items={data}
+                        columns={this._columns}
+                        setKey='set'
+                        isHeaderVisible={false}
+                        layoutMode={DetailsListLayoutMode.justified}
+                        selectionMode={1}
+                        selectionPreservedOnEmptyClick={true}
+                        onItemInvoked={this._onItemInvoked}
+                      />
                     </Fabric>
                   ) : null}
                   <Game />
@@ -437,25 +444,8 @@ export default class TicTacToe extends React.Component<
             </div>
           </div>
         </div>
-      </div>
+      </Fabric>
     );
-  }
-
-  private _getSelectionDetails(): string {
-    const selectionCount = this._selection.getSelectedCount();
-
-    switch (selectionCount) {
-      case 0:
-        return "No items selected";
-      case 1:
-        return (
-          "1 item selected: " +
-          (this._selection.getSelection()[0] as IDetailsListBasicExampleItem)
-            .name
-        );
-      default:
-        return `${selectionCount} items selected`;
-    }
   }
 
   private _onItemInvoked = (item: IDetailsListBasicExampleItem): void => {

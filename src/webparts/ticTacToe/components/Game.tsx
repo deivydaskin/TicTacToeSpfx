@@ -4,6 +4,7 @@ import Board from "./Board";
 import calculateWinner from "./Winner";
 import { IGameState } from "./props/IGameState";
 import { sendMSG } from "./TicTacToe";
+import { PrimaryButton } from "office-ui-fabric-react";
 
 const initsqrs = [];
 var initxIsNext = true;
@@ -83,7 +84,11 @@ export default class Game extends React.Component<{}, IGameState> {
           <div>{status}</div>
         </div>
         {winner || status == "Draw game" ? (
-          <button onClick={this.handleRestart}>Restart</button>
+          <PrimaryButton
+            text='Restart'
+            onClick={this.handleRestart}
+            style={{ marginTop: 50, marginLeft: -90 }}
+          />
         ) : null}
       </div>
     );
