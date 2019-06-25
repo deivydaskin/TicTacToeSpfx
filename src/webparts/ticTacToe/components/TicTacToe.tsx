@@ -178,7 +178,7 @@ export default class TicTacToe extends React.Component<
 
   postOfferToList() {
     let loginName = this.props.loginName;
-    let offerSD = this.state.offerSDP;
+    let offerSD = JSON.stringify(pc.localDescription);
     let spOpts: ISPHttpClientOptions = {
       headers: {
         Accept: "application/json",
@@ -204,17 +204,17 @@ export default class TicTacToe extends React.Component<
   }
 
   createOffer1() {
-    dc = pc.createDataChannel("ticTacToe");
+    dc = pc.createDataChannel(null);
     pc.createOffer()
       .then(function(offer) {
-        pc.setLocalDescription(offer);
-        fferSDP = offer;
+        return pc.setLocalDescription(offer);
       })
       .then(() => {
         this.setState({
-          offerSDP: JSON.stringify(fferSDP)
+          offerSDP: JSON.stringify(pc.localDescription)
         });
-        this.postOfferToList();
+
+        console.log(pc.localDescription);
       });
     dcInit(dc);
   }
@@ -243,6 +243,7 @@ export default class TicTacToe extends React.Component<
     var offerDesc = new RTCSessionDescription(SDP);
 
     pc.setRemoteDescription(offerDesc);
+    console.log(offerDesc);
     pc.createAnswer(sdpConstraints)
       .then(function(answer) {
         return pc.setLocalDescription(answer);
@@ -323,6 +324,12 @@ export default class TicTacToe extends React.Component<
 
   componentDidMount() {
     pc = new RTCPeerConnection(null);
+
+    pc.onicecandidate = function(e) {
+      if (e.candidate) return;
+      console.log(pc.localDescription);
+      //return this.postOfferToList();
+    };
   }
 
   componentWillUnmount() {
@@ -391,6 +398,12 @@ export default class TicTacToe extends React.Component<
                       game
                     </MessageBar>
                   ) : null}
+                  <PrimaryButton
+                    id='sendOffer'
+                    text='Send Offer'
+                    onClick={() => this.postOfferToList()}
+                    style={{ margin: 10 }}
+                  />
                   <PrimaryButton
                     id='startBtn'
                     text='Start'
@@ -476,7 +489,7 @@ export default class TicTacToe extends React.Component<
         Accept: "application/json",
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(description)
+      body: JSON.stringify(pc.localDescription)
     };
 
     var url = `${
