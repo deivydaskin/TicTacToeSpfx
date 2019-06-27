@@ -23,10 +23,11 @@ import {
   MessageBar,
   MessageBarType
 } from "office-ui-fabric-react/lib/MessageBar";
+import { postOfferToList } from "./Api";
+import { sp } from "@pnp/sp";
 
 var pc, dc;
 var sdpConstraints = { optional: [{ RtpDataChannels: true }] };
-var fferSDP;
 
 export const sendMSG = (move, xIsNext) => {
   if (pc.localDescription.type == "answer" && xIsNext) {
@@ -116,9 +117,8 @@ export default class TicTacToe extends React.Component<
 
     this.handleClick = this.handleClick.bind(this);
     this.getOfferList = this.getOfferList.bind(this);
-    this.createOffer1 = this.createOffer1.bind(this);
+    this.createOffer = this.createOffer.bind(this);
     this.start = this.start.bind(this);
-    this.handleChange = this.handleChange.bind(this);
     this.createAnswerSDP = this.createAnswerSDP.bind(this);
     this.getAnswerSDP = this.getAnswerSDP.bind(this);
     this.createListSubscription = this.createListSubscription.bind(this);
@@ -131,8 +131,24 @@ export default class TicTacToe extends React.Component<
       this.setState({
         startGame: !this.state.startGame
       });
-      this.createOffer1();
-      this.createListSubscription();
+      this.createOffer();
+
+      let loginName = this.props.loginName;
+      let siteURL = this.props.siteUrl;
+      let spHttp = this.props.spHttpClient;
+      let libId = this.props.libraryId;
+
+      pc.onicecandidate = function(e) {
+        if (e.candidate) return;
+        console.log(pc.localDescription);
+        postOfferToList(loginName, pc.localDescription, siteURL, spHttp, libId);
+      };
+
+      setTimeout(() => {
+        this.createListSubscription();
+        console.log("subscribed");
+      }, 2000);
+      //this.createListSubscription();
     }
     if (e == "joinGame") {
       this.setState({
@@ -154,56 +170,28 @@ export default class TicTacToe extends React.Component<
   }
 
   getOfferList() {
-    this.props.spHttpClient
-      .get(
-        `${
-          this.props.siteUrl
-        }/_api/web/GetFolderByServerRelativeUrl('/ticTacToe')/Files`,
-        SPHttpClient.configurations.v1
-      )
-      .then((response: SPHttpClientResponse) => {
-        response.json().then((responseJSON: any) => {
-          let temp = [];
-          responseJSON.value.map((e, i) =>
-            temp.push({
-              key: i,
-              name: e.Name
-            })
-          );
-          this.setState({ offers: temp });
-        });
-      });
-    this.setState({ offerList: true });
-  }
-
-  postOfferToList() {
-    let loginName = this.props.loginName;
-    let offerSD = JSON.stringify(pc.localDescription);
-    let spOpts: ISPHttpClientOptions = {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json"
-      },
-      body: offerSD
-    };
-
-    var url = `${
-      this.props.siteUrl
-    }/_api/web/GetFolderByServerRelativeUrl('/ticTacToe')/Files/Add(url='${loginName}', overwrite=true)`;
-
-    this.props.spHttpClient
-      .post(url, SPHttpClient.configurations.v1, spOpts)
-      .then((response: SPHttpClientResponse) => {
-        console.log(`Status code: ${response.status}`);
-        console.log(`Status text: ${response.statusText}`);
-
-        response.json().then((responseJSON: JSON) => {
-          console.log(responseJSON);
-        });
+    sp.web.lists
+      .getById(this.props.libraryId)
+      .items.select("ID", "Title", "GUID", "Author/Name")
+      .expand("Author")
+      .get()
+      .then((responseJSON: any) => {
+        let temp = [];
+        console.log(responseJSON);
+        responseJSON.map((e, i) =>
+          temp.push({
+            key: e.GUID,
+            name: e.Author.Name.split("|")[2]
+          })
+        );
+        this.setState({ offers: temp, offerList: true });
+      })
+      .catch(err => {
+        console.log(err);
       });
   }
 
-  createOffer1() {
+  createOffer() {
     dc = pc.createDataChannel(null);
     pc.createOffer()
       .then(function(offer) {
@@ -215,32 +203,28 @@ export default class TicTacToe extends React.Component<
         });
 
         console.log(pc.localDescription);
+      })
+      .catch(err => {
+        console.log(err);
       });
     dcInit(dc);
   }
 
-  start() {
+  start(answer) {
     var answerDesc = new RTCSessionDescription(
-      JSON.parse(this.state.offerOpponentSDP)
+      // JSON.parse(this.state.offerOpponentSDP)
+      answer
     );
     pc.setRemoteDescription(answerDesc);
   }
 
-  handleChange(e) {
-    if (e.target.id == "getSDP") {
-      this.setState({
-        offerOpponentSDP: e.target.value
-      });
-    }
-    if (e.target.id == "offerSDP") {
-      this.setState({
-        answerOfferSDP: e.target.value
-      });
-    }
-  }
-
   createAnswerSDP(SDP, item) {
     var offerDesc = new RTCSessionDescription(SDP);
+
+    let loginName = this.props.loginName;
+    let siteURL = this.props.siteUrl;
+    let spHttp = this.props.spHttpClient;
+    let libId = this.props.libraryId;
 
     pc.setRemoteDescription(offerDesc);
     console.log(offerDesc);
@@ -254,7 +238,10 @@ export default class TicTacToe extends React.Component<
         });
       })
       .then(() => {
-        this.sendAnswerSDP(pc.localDescription, item);
+        postOfferToList(item, pc.localDescription, siteURL, spHttp, libId);
+      })
+      .catch(err => {
+        console.log(err);
       });
   }
 
@@ -263,17 +250,22 @@ export default class TicTacToe extends React.Component<
 
     this.props.spHttpClient
       .get(
-        `${
-          this.props.siteUrl
-        }/_api/web/GetFolderByServerRelativeUrl('/ticTacToe')/Files('${loginName}')/$value`,
+        `${this.props.siteUrl}/_api/web/lists(guid'${
+          this.props.libraryId
+        }')/rootfolder/Files('${loginName}')/$value`,
         SPHttpClient.configurations.v1
       )
       .then((response: SPHttpClientResponse) => {
         response.json().then((responseJSON: any) => {
+          console.log(responseJSON);
           this.setState({
             offerOpponentSDP: JSON.stringify(responseJSON)
           });
+          this.start(responseJSON);
         });
+      })
+      .catch(err => {
+        console.log(err);
       });
   }
 
@@ -290,6 +282,9 @@ export default class TicTacToe extends React.Component<
       })
       .then(listSubscription => {
         this._listSubscription = listSubscription;
+      })
+      .catch(err => {
+        console.log(err);
       });
   }
 
@@ -300,36 +295,15 @@ export default class TicTacToe extends React.Component<
       });
     }
     if (this.state.startGame) {
-      let loginName = this.props.loginName;
-
-      this.props.spHttpClient
-        .get(
-          `${
-            this.props.siteUrl
-          }/_api/web/GetFolderByServerRelativeUrl('/ticTacToe')/Files('${loginName}')/$value`,
-          SPHttpClient.configurations.v1
-        )
-        .then((response: SPHttpClientResponse) => {
-          response.json().then((responseJSON: any) => {
-            if (responseJSON.type == "answer") {
-              this.setState({
-                offerOpponentSDP: JSON.stringify(responseJSON),
-                notification: true
-              });
-            }
-          });
-        });
+      this.setState({
+        notification: true
+      });
+      this.getAnswerSDP();
     }
   }
 
   componentDidMount() {
     pc = new RTCPeerConnection(null);
-
-    pc.onicecandidate = function(e) {
-      if (e.candidate) return;
-      console.log(pc.localDescription);
-      //return this.postOfferToList();
-    };
   }
 
   componentWillUnmount() {
@@ -344,9 +318,9 @@ export default class TicTacToe extends React.Component<
       body: this.state.answerAnswerSDP
     };
 
-    var url = `${
-      this.props.siteUrl
-    }/_api/web/GetFileByServerRelativeUrl('/ticTacToe/${loginName}')`;
+    var url = `${this.props.siteUrl}/_api/web/GetFileByServerRelativeUrl('/${
+      this.props.libraryId
+    }/${loginName}')`;
 
     this.props.spHttpClient
       .post(url, SPHttpClient.configurations.v1, spOpts)
@@ -357,6 +331,9 @@ export default class TicTacToe extends React.Component<
         response.json().then((responseJSON: JSON) => {
           console.log(responseJSON);
         });
+      })
+      .catch(err => {
+        console.log(err);
       });
   }
 
@@ -398,12 +375,6 @@ export default class TicTacToe extends React.Component<
                       game
                     </MessageBar>
                   ) : null}
-                  <PrimaryButton
-                    id='sendOffer'
-                    text='Send Offer'
-                    onClick={() => this.postOfferToList()}
-                    style={{ margin: 10 }}
-                  />
                   <PrimaryButton
                     id='startBtn'
                     text='Start'
@@ -468,9 +439,9 @@ export default class TicTacToe extends React.Component<
   private getFileOffer(item) {
     this.props.spHttpClient
       .get(
-        `${
-          this.props.siteUrl
-        }/_api/web/GetFolderByServerRelativeUrl('/ticTacToe')/Files('${item}')/$value`,
+        `${this.props.siteUrl}/_api/web/lists(guid'${
+          this.props.libraryId
+        }')/rootfolder/Files('${item}')/$value`,
         SPHttpClient.configurations.v1
       )
       .then((response: SPHttpClientResponse) => {
@@ -480,31 +451,9 @@ export default class TicTacToe extends React.Component<
           });
           this.createAnswerSDP(responseJSON, item);
         });
-      });
-  }
-
-  private sendAnswerSDP(description, item) {
-    let spOpts: ISPHttpClientOptions = {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(pc.localDescription)
-    };
-
-    var url = `${
-      this.props.siteUrl
-    }/_api/web/GetFolderByServerRelativeUrl('/ticTacToe')/Files/Add(url='${item}', overwrite=true)`;
-
-    this.props.spHttpClient
-      .post(url, SPHttpClient.configurations.v1, spOpts)
-      .then((response: SPHttpClientResponse) => {
-        console.log(`Status code: ${response.status}`);
-        console.log(`Status text: ${response.statusText}`);
-
-        response.json().then((responseJSON: JSON) => {
-          console.log(responseJSON);
-        });
+      })
+      .catch(err => {
+        console.log(err);
       });
   }
 }
