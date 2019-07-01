@@ -37,49 +37,21 @@
     @include ms-fontColor-white;
   }
 
-  .button {
-    // Our button
-    text-decoration: none;
-    height: 32px;
-
-    // Primary Button
-    min-width: 80px;
-    background-color: $ms-color-themePrimary;
-    border-color: $ms-color-themePrimary;
-    color: $ms-color-white;
-
-    // Basic Button
-    outline: transparent;
-    position: relative;
-    font-family: "Segoe UI WestEuropean", "Segoe UI", -apple-system,
-      BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif;
-    -webkit-font-smoothing: antialiased;
-    font-size: $ms-font-size-m;
-    font-weight: $ms-font-weight-regular;
-    border-width: 0;
-    text-align: center;
-    cursor: pointer;
-    display: inline-block;
-    padding: 0 16px;
-
-    .label {
-      font-weight: $ms-font-weight-semibold;
-      font-size: $ms-font-size-m;
-      height: 32px;
-      line-height: 32px;
-      margin: 0 4px;
-      vertical-align: top;
-      display: inline-block;
-    }
+  .startWindow {
+    display: flex;
+    justify-content: space-evenly;
   }
+
+  .gameWindow {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
   .board-row:after {
     clear: both;
     content: "";
     display: table;
-  }
-
-  .status {
-    margin-bottom: 10px;
   }
 
   .square {
@@ -89,12 +61,12 @@
     font-size: 2.5rem;
     font-weight: bold;
     line-height: 34px;
-    height: 5vw;
+    height: 75px;
     margin-right: -1px;
     margin-top: -1px;
     padding: 0;
     text-align: center;
-    width: 5vw;
+    width: 75px;
   }
 
   .square:focus {
@@ -108,6 +80,8 @@
   .game {
     display: flex;
     flex-direction: row;
+    padding: 10px;
+    justify-content: center;
   }
 
   .game-info {

@@ -34,7 +34,7 @@ export default class TicTacToeWebPart extends BaseClientSideWebPart<
         description: this.properties.description,
         spHttpClient: this.context.spHttpClient,
         siteUrl: this.context.pageContext.web.absoluteUrl,
-        loginName: this.context.pageContext.user.displayName,
+        loginName: this.context.pageContext.user.loginName,
         libraryId: this.properties.tictactoeLibraryId,
         listSubscriptionFactory: new ListSubscriptionFactory(this)
       }
