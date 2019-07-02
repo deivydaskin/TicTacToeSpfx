@@ -25,6 +25,7 @@ import {
 } from "office-ui-fabric-react/lib/MessageBar";
 import { postOfferToList } from "./Api";
 import { sp } from "@pnp/sp";
+import * as strings from "TicTacToeWebPartStrings";
 
 var pc, dc;
 var sdpConstraints = { optional: [{ RtpDataChannels: true }] };
@@ -355,12 +356,12 @@ export default class TicTacToe extends React.Component<
               <div className={styles.startWindow}>
                 <PrimaryButton
                   id='createGame'
-                  text='Create Game'
+                  text={strings.CreateBtnLabel}
                   onClick={() => this.handleClick("createGame")}
                 />
                 <PrimaryButton
                   id='joinGame'
-                  text='Join Game'
+                  text={strings.JoinBtnLabel}
                   onClick={() => this.handleClick("joinGame")}
                 />
               </div>
@@ -372,7 +373,7 @@ export default class TicTacToe extends React.Component<
                       onDismiss={this.dismissNotification}
                       dismissButtonAriaLabel='Close'
                     >
-                      Your offer has been accepted! Start by placing 'X' on the board.
+                      {strings.OfferAcceptedNotification}
                     </MessageBar>
                   ) : null}
                   {/* <PrimaryButton
@@ -391,8 +392,7 @@ export default class TicTacToe extends React.Component<
                       onDismiss={this.dismissNotification}
                       dismissButtonAriaLabel='Close'
                     >
-                      Got a new game offer! Press 'Show Offer List' to refresh
-                      the list
+                      {strings.NewGameOfferNotification}
                     </MessageBar>
                   ) : null}
                   <PrimaryButton
@@ -402,8 +402,8 @@ export default class TicTacToe extends React.Component<
                     toggle={true}
                     text={
                       this.state.offerList
-                        ? "Hide Offer List"
-                        : "Show Offer List"
+                        ? strings.HideOffersBtnLabel
+                        : strings.ShowOffersBtnLabel
                     }
                     onClick={() => this.handleClick("hideOfferList")}
                     style={{ margin: 10 }}
@@ -422,7 +422,7 @@ export default class TicTacToe extends React.Component<
                         onItemInvoked={this._onItemInvoked}
                       />
                       <PrimaryButton
-                      text={"Play"}
+                      text={strings.PlayBtnLabel}
                       onClick={() => this.handleClick("play")}
                       />
                     </Fabric>

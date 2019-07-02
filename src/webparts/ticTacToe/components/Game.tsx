@@ -5,6 +5,7 @@ import calculateWinner from "./Winner";
 import { IGameState } from "./props/IGameState";
 import { sendMSG } from "./TicTacToe";
 import { PrimaryButton } from "office-ui-fabric-react";
+import * as strings from "TicTacToeWebPartStrings";
 
 const initsqrs = [];
 var initxIsNext = true;
@@ -63,12 +64,12 @@ export default class Game extends React.Component<{}, IGameState> {
 
     let status: string;
     if (winner) {
-      status = "Winner: " + winner;
+      status = strings.GameStatusWinner + winner;
     } else {
       if (this.state.squares.every(s => s != null)) {
-        status = "Draw game";
+        status = strings.GameStatusDraw;
       } else {
-        status = "Next player: " + (this.state.xIsNext ? "X" : "O");
+        status = strings.GameStatusNextPlayer + (this.state.xIsNext ? "X" : "O");
       }
     }
 
@@ -83,9 +84,9 @@ export default class Game extends React.Component<{}, IGameState> {
         <div className={styles["game-info"]}>
           <div>{status}</div>
         </div>
-        {winner || status == "Draw game" ? (
+        {winner || status == strings.GameStatusDraw ? (
           <PrimaryButton
-            text='Restart'
+            text={strings.RestartBtnLabel}
             onClick={this.handleRestart}
             style={{ marginTop: 50, marginLeft: -90 }}
           />
