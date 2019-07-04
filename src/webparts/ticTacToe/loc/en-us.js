@@ -10,7 +10,7 @@ define([], function() {
     "ShowOffersBtnLabel": "Show Offer List",
     "HideOffersBtnLabel": "Hide Offer List",
     "PlayBtnLabel": "Play",
-    "GameStatusWinner": "Winner",
+    "GameStatusWinner": "Winner: ",
     "GameStatusDraw": "Draw game",
     "GameStatusNextPlayer": "Next player: ",
     "RestartBtnLabel": "Restart",

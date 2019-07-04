@@ -10,7 +10,7 @@ define([], function() {
       "ShowOffersBtnLabel": "Rodyti pasiūlymų sąrašą",
       "HideOffersBtnLabel": "Slėpti pasiūlymų sąrašą",
       "PlayBtnLabel": "Žaisti",
-      "GameStatusWinner": "Laimėtojas",
+      "GameStatusWinner": "Laimėtojas: ",
       "GameStatusDraw": "Lygiosios",
       "GameStatusNextPlayer": "Kitas žaidėjas: ",
       "RestartBtnLabel": "Pradėti iš naujo",
