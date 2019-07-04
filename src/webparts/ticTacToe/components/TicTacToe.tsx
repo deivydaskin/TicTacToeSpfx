@@ -259,11 +259,15 @@ export default class TicTacToe extends React.Component<
       )
       .then((response: SPHttpClientResponse) => {
         response.json().then((responseJSON: any) => {
+          if(JSON.stringify(responseJSON).slice(9, 15) == "answer"){
           this.setState({
-            offerOpponentSDP: JSON.stringify(responseJSON)
+            offerOpponentSDP: JSON.stringify(responseJSON),
+            notification: true
           });
           this.start(responseJSON);
-        });
+         }
+         });
+      
       })
       .catch(err => {
         console.log(err);
@@ -296,9 +300,6 @@ export default class TicTacToe extends React.Component<
       });
     }
     if (this.state.startGame) {
-      this.setState({
-        notification: true
-      });
       this.getAnswerSDP();
     }
   }
