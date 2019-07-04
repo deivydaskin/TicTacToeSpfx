@@ -11,7 +11,8 @@ import { Fabric } from "office-ui-fabric-react/lib/Fabric";
 import {
   DetailsList,
   DetailsListLayoutMode,
-  IColumn
+  IColumn,
+  Selection
 } from "office-ui-fabric-react/lib/DetailsList";
 import {
   ListSubscriptionFactory,
@@ -20,11 +21,11 @@ import {
 import { Guid } from "@microsoft/sp-core-library";
 import { PrimaryButton } from "office-ui-fabric-react";
 import {
-  MessageBar,
-  MessageBarType
+  MessageBar
 } from "office-ui-fabric-react/lib/MessageBar";
 import { postOfferToList } from "./Api";
 import { sp } from "@pnp/sp";
+import * as strings from "TicTacToeWebPartStrings";
 
 var pc, dc;
 var sdpConstraints = { optional: [{ RtpDataChannels: true }] };
@@ -73,6 +74,7 @@ interface IState {
   answerAnswerSDP: string;
   offerList: boolean;
   notification: boolean;
+  selectionDetails: {};
 }
 
 export interface IDetailsListBasicExampleItem {
@@ -88,16 +90,21 @@ export default class TicTacToe extends React.Component<
   private _columns: IColumn[];
   _listSubscriptionFactory: ListSubscriptionFactory;
   _listSubscription: IListSubscription;
+  private _selection: Selection;
 
   constructor(props) {
     super(props);
+
+    this._selection = new Selection({
+      onSelectionChanged: () => this.setState({ selectionDetails: this._getSelectionDetails() })
+    });
 
     this._columns = [
       {
         key: "column1",
         name: "Name",
         fieldName: "name",
-        minWidth: 100,
+        minWidth: 200,
         maxWidth: 200,
         isResizable: true
       }
@@ -112,7 +119,8 @@ export default class TicTacToe extends React.Component<
       answerOfferSDP: "",
       answerAnswerSDP: "",
       offerList: false,
-      notification: false
+      notification: false,
+      selectionDetails: {}
     };
 
     this.handleClick = this.handleClick.bind(this);
@@ -126,7 +134,6 @@ export default class TicTacToe extends React.Component<
   }
 
   private handleClick(e): void {
-    console.log(e);
     if (e == "createGame") {
       this.setState({
         startGame: !this.state.startGame
@@ -140,15 +147,12 @@ export default class TicTacToe extends React.Component<
 
       pc.onicecandidate = function(e) {
         if (e.candidate) return;
-        console.log(pc.localDescription);
         postOfferToList(loginName, pc.localDescription, siteURL, spHttp, libId);
       };
 
       setTimeout(() => {
         this.createListSubscription();
-        console.log("subscribed");
       }, 2000);
-      //this.createListSubscription();
     }
     if (e == "joinGame") {
       this.setState({
@@ -167,6 +171,10 @@ export default class TicTacToe extends React.Component<
         this.getOfferList();
       }
     }
+
+    if(e == "play"){
+      this.getFileOffer(this.state.selectionDetails);
+    }
   }
 
   getOfferList() {
@@ -177,7 +185,6 @@ export default class TicTacToe extends React.Component<
       .get()
       .then((responseJSON: any) => {
         let temp = [];
-        console.log(responseJSON);
         responseJSON.map((e, i) =>
           temp.push({
             key: e.GUID,
@@ -193,6 +200,7 @@ export default class TicTacToe extends React.Component<
 
   createOffer() {
     dc = pc.createDataChannel(null);
+    dcInit(dc);
     pc.createOffer()
       .then(function(offer) {
         return pc.setLocalDescription(offer);
@@ -201,18 +209,14 @@ export default class TicTacToe extends React.Component<
         this.setState({
           offerSDP: JSON.stringify(pc.localDescription)
         });
-
-        console.log(pc.localDescription);
       })
       .catch(err => {
         console.log(err);
       });
-    dcInit(dc);
   }
 
   start(answer) {
     var answerDesc = new RTCSessionDescription(
-      // JSON.parse(this.state.offerOpponentSDP)
       answer
     );
     pc.setRemoteDescription(answerDesc);
@@ -227,7 +231,6 @@ export default class TicTacToe extends React.Component<
     let libId = this.props.libraryId;
 
     pc.setRemoteDescription(offerDesc);
-    console.log(offerDesc);
     pc.createAnswer(sdpConstraints)
       .then(function(answer) {
         return pc.setLocalDescription(answer);
@@ -257,12 +260,15 @@ export default class TicTacToe extends React.Component<
       )
       .then((response: SPHttpClientResponse) => {
         response.json().then((responseJSON: any) => {
-          console.log(responseJSON);
+          if(JSON.stringify(responseJSON).slice(9, 15) == "answer"){
           this.setState({
-            offerOpponentSDP: JSON.stringify(responseJSON)
+            offerOpponentSDP: JSON.stringify(responseJSON),
+            notification: true
           });
           this.start(responseJSON);
-        });
+         }
+         });
+      
       })
       .catch(err => {
         console.log(err);
@@ -295,9 +301,6 @@ export default class TicTacToe extends React.Component<
       });
     }
     if (this.state.startGame) {
-      this.setState({
-        notification: true
-      });
       this.getAnswerSDP();
     }
   }
@@ -354,12 +357,12 @@ export default class TicTacToe extends React.Component<
               <div className={styles.startWindow}>
                 <PrimaryButton
                   id='createGame'
-                  text='Create Game'
+                  text={strings.CreateBtnLabel}
                   onClick={() => this.handleClick("createGame")}
                 />
                 <PrimaryButton
                   id='joinGame'
-                  text='Join Game'
+                  text={strings.JoinBtnLabel}
                   onClick={() => this.handleClick("joinGame")}
                 />
               </div>
@@ -371,16 +374,15 @@ export default class TicTacToe extends React.Component<
                       onDismiss={this.dismissNotification}
                       dismissButtonAriaLabel='Close'
                     >
-                      Your offer has been accepted! Press 'Start' to start the
-                      game
+                      {strings.OfferAcceptedNotification}
                     </MessageBar>
                   ) : null}
-                  <PrimaryButton
+                  {/* <PrimaryButton
                     id='startBtn'
                     text='Start'
                     onClick={this.start}
                     style={{ margin: 10 }}
-                  />
+                  /> */}
                   <Game />
                 </div>
               ) : null}
@@ -391,8 +393,7 @@ export default class TicTacToe extends React.Component<
                       onDismiss={this.dismissNotification}
                       dismissButtonAriaLabel='Close'
                     >
-                      Got a new game offer! Press 'Show Offer List' to refresh
-                      the list
+                      {strings.NewGameOfferNotification}
                     </MessageBar>
                   ) : null}
                   <PrimaryButton
@@ -402,8 +403,8 @@ export default class TicTacToe extends React.Component<
                     toggle={true}
                     text={
                       this.state.offerList
-                        ? "Hide Offer List"
-                        : "Show Offer List"
+                        ? strings.HideOffersBtnLabel
+                        : strings.ShowOffersBtnLabel
                     }
                     onClick={() => this.handleClick("hideOfferList")}
                     style={{ margin: 10 }}
@@ -414,11 +415,16 @@ export default class TicTacToe extends React.Component<
                         items={data}
                         columns={this._columns}
                         setKey='set'
+                        selection={this._selection}
                         isHeaderVisible={false}
                         layoutMode={DetailsListLayoutMode.justified}
                         selectionMode={1}
                         selectionPreservedOnEmptyClick={true}
                         onItemInvoked={this._onItemInvoked}
+                      />
+                      <PrimaryButton
+                      text={strings.PlayBtnLabel}
+                      onClick={() => this.handleClick("play")}
                       />
                     </Fabric>
                   ) : null}
@@ -431,6 +437,10 @@ export default class TicTacToe extends React.Component<
       </Fabric>
     );
   }
+
+private _getSelectionDetails(): string {
+      return (this._selection.getSelection()[0] as IDetailsListBasicExampleItem).name;
+}
 
   private _onItemInvoked = (item: IDetailsListBasicExampleItem): void => {
     this.getFileOffer(item.name);
