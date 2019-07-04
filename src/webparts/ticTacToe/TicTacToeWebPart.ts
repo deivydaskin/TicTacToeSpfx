@@ -57,7 +57,7 @@ export default class TicTacToeWebPart extends BaseClientSideWebPart<
         {
           header: {
             description:
-              "URL of the site where the document library to show documents from is located. Leave empty to connect to a document library from the current site"
+              strings.Description
           },
           groups: [
             {
@@ -66,17 +66,17 @@ export default class TicTacToeWebPart extends BaseClientSideWebPart<
                 PropertyFieldTextWithCallout("siteUrl", {
                   calloutTrigger: CalloutTriggers.Click,
                   key: "siteUrlFieldId",
-                  label: "Site URL",
+                  label: strings.SiteUrlLabel,
                   calloutContent: React.createElement(
                     "span",
                     {},
-                    "URL of the site where the document library to show documents from is located. Leave empty to connect to a document library from the current site"
+                    strings.Description
                   ),
                   calloutWidth: 250,
                   value: this.properties.siteUrl
                 }),
                 PropertyFieldListPicker("tictactoeLibraryId", {
-                  label: "Select a document library",
+                  label: strings.DocumentLibraryLabel,
                   selectedList: this.properties.tictactoeLibraryId,
                   includeHidden: false,
                   orderBy: PropertyFieldListPickerOrderBy.Title,
