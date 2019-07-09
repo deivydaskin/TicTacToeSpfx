@@ -56,8 +56,7 @@ export default class TicTacToeWebPart extends BaseClientSideWebPart<
       pages: [
         {
           header: {
-            description:
-              strings.Description
+            description: strings.Description
           },
           groups: [
             {

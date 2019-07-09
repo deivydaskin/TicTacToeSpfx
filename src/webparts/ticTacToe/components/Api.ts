@@ -3,7 +3,6 @@ import {
   SPHttpClientResponse,
   ISPHttpClientOptions
 } from "@microsoft/sp-http";
-import { sp, ItemAddResult } from "@pnp/sp";
 
 export const postOfferToList = (name, body, siteUrl, spHttpClient, libId) => {
   let spOpts: ISPHttpClientOptions = {
@@ -27,5 +26,6 @@ export const postOfferToList = (name, body, siteUrl, spHttpClient, libId) => {
       response.json().then((responseJSON: JSON) => {
         console.log(responseJSON);
       });
-    });
+    })
+    .catch(err => console.log(err));
 };

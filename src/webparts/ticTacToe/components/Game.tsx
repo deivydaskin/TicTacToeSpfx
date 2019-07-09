@@ -52,6 +52,7 @@ export default class Game extends React.Component<{}, IGameState> {
       squares: initsqrs,
       xIsNext: !initxIsNext
     });
+    sendMSG(initsqrs, !initxIsNext);
     initxIsNext = !initxIsNext;
   }
 
@@ -69,13 +70,14 @@ export default class Game extends React.Component<{}, IGameState> {
       if (this.state.squares.every(s => s != null)) {
         status = strings.GameStatusDraw;
       } else {
-        status = strings.GameStatusNextPlayer + (this.state.xIsNext ? "X" : "O");
+        status =
+          strings.GameStatusNextPlayer + (this.state.xIsNext ? "X" : "O");
       }
     }
 
     return (
       <div className={styles.game}>
-        <div className='game-board'>
+        <div className="game-board">
           <Board
             squares={this.state.squares}
             onClick={(i: number) => this.handleClick(i)}

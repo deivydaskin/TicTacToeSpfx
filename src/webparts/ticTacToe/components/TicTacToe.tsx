@@ -20,9 +20,7 @@ import {
 } from "@microsoft/sp-list-subscription";
 import { Guid } from "@microsoft/sp-core-library";
 import { PrimaryButton } from "office-ui-fabric-react";
-import {
-  MessageBar
-} from "office-ui-fabric-react/lib/MessageBar";
+import { MessageBar } from "office-ui-fabric-react/lib/MessageBar";
 import { postOfferToList } from "./Api";
 import { sp } from "@pnp/sp";
 import * as strings from "TicTacToeWebPartStrings";
@@ -52,9 +50,35 @@ export const sendMSG = (move, xIsNext) => {
   }
 };
 
-function dcInit(dc) {
+function dcInit(dc, isCreator, loginName, libId, siteUrl, spHttpClient) {
   dc.onopen = () => {
     alert("Connected");
+    if (isCreator) {
+      let spOpts: ISPHttpClientOptions = {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "IF-MATCH": "etag or '*'",
+          "X-HTTP-Method": "DELETE"
+        }
+      };
+
+      var url = `${siteUrl}/_api/web/lists(guid'${libId}')/rootfolder/Files('${loginName}')`;
+
+      spHttpClient
+        .post(url, SPHttpClient.configurations.v1, spOpts)
+        .then((response: SPHttpClientResponse) => {
+          console.log(`Status code: ${response.status}`);
+          console.log(`Status text: ${response.statusText}`);
+
+          response.json().then((responseJSON: JSON) => {
+            console.log(responseJSON);
+          });
+        })
+        .catch(err => {
+          console.log(err);
+        });
+    }
   };
   dc.onmessage = function(e) {
     if (e.data) {
@@ -96,7 +120,8 @@ export default class TicTacToe extends React.Component<
     super(props);
 
     this._selection = new Selection({
-      onSelectionChanged: () => this.setState({ selectionDetails: this._getSelectionDetails() })
+      onSelectionChanged: () =>
+        this.setState({ selectionDetails: this._getSelectionDetails() })
     });
 
     this._columns = [
@@ -155,13 +180,19 @@ export default class TicTacToe extends React.Component<
       }, 2000);
     }
     if (e == "joinGame") {
+      let loginName = this.props.loginName;
+      let libId = this.props.libraryId;
+      let siteUrl = this.props.siteUrl;
+      let spHttp = this.props.spHttpClient;
+      let isCreator = false;
+
       this.setState({
         joinGame: !this.state.joinGame
       });
       this.createListSubscription();
       pc.ondatachannel = function(e) {
         dc = e.channel;
-        dcInit(dc);
+        dcInit(dc, isCreator, loginName, libId, siteUrl, spHttp);
       };
     }
     if (e == "hideOfferList") {
@@ -172,7 +203,7 @@ export default class TicTacToe extends React.Component<
       }
     }
 
-    if(e == "play"){
+    if (e == "play") {
       this.getFileOffer(this.state.selectionDetails);
     }
   }
@@ -199,8 +230,14 @@ export default class TicTacToe extends React.Component<
   }
 
   createOffer() {
+    let loginName = this.props.loginName;
+    let libId = this.props.libraryId;
+    let siteUrl = this.props.siteUrl;
+    let spHttp = this.props.spHttpClient;
+    let isCreator = true;
+
     dc = pc.createDataChannel(null);
-    dcInit(dc);
+    dcInit(dc, isCreator, loginName, libId, siteUrl, spHttp);
     pc.createOffer()
       .then(function(offer) {
         return pc.setLocalDescription(offer);
@@ -216,16 +253,13 @@ export default class TicTacToe extends React.Component<
   }
 
   start(answer) {
-    var answerDesc = new RTCSessionDescription(
-      answer
-    );
+    var answerDesc = new RTCSessionDescription(answer);
     pc.setRemoteDescription(answerDesc);
   }
 
   createAnswerSDP(SDP, item) {
     var offerDesc = new RTCSessionDescription(SDP);
 
-    let loginName = this.props.loginName;
     let siteURL = this.props.siteUrl;
     let spHttp = this.props.spHttpClient;
     let libId = this.props.libraryId;
@@ -249,26 +283,27 @@ export default class TicTacToe extends React.Component<
   }
 
   private getAnswerSDP() {
-    let loginName = this.props.loginName;
-
     this.props.spHttpClient
       .get(
         `${this.props.siteUrl}/_api/web/lists(guid'${
           this.props.libraryId
-        }')/rootfolder/Files('${loginName}')/$value`,
+        }')/rootfolder/Files('${this.props.loginName}')/$value`,
         SPHttpClient.configurations.v1
       )
       .then((response: SPHttpClientResponse) => {
         response.json().then((responseJSON: any) => {
-          if(JSON.stringify(responseJSON).slice(9, 15) == "answer"){
-          this.setState({
-            offerOpponentSDP: JSON.stringify(responseJSON),
-            notification: true
-          });
-          this.start(responseJSON);
-         }
-         });
-      
+          let typeStart = 9;
+          let typeEnd = 15;
+          if (
+            JSON.stringify(responseJSON).slice(typeStart, typeEnd) == "answer"
+          ) {
+            this.setState({
+              offerOpponentSDP: JSON.stringify(responseJSON),
+              notification: true
+            });
+            this.start(responseJSON);
+          }
+        });
       })
       .catch(err => {
         console.log(err);
@@ -317,13 +352,12 @@ export default class TicTacToe extends React.Component<
         "Content-Type": "application/json",
         "IF-MATCH": "etag or '*'",
         "X-HTTP-Method": "DELETE"
-      },
-      body: this.state.answerAnswerSDP
+      }
     };
 
-    var url = `${this.props.siteUrl}/_api/web/GetFileByServerRelativeUrl('/${
+    var url = `${this.props.siteUrl}/_api/web/lists(guid'${
       this.props.libraryId
-    }/${loginName}')`;
+    }')/rootfolder/Files('${loginName}')`;
 
     this.props.spHttpClient
       .post(url, SPHttpClient.configurations.v1, spOpts)
@@ -356,12 +390,12 @@ export default class TicTacToe extends React.Component<
             <div className={styles.row}>
               <div className={styles.startWindow}>
                 <PrimaryButton
-                  id='createGame'
+                  id="createGame"
                   text={strings.CreateBtnLabel}
                   onClick={() => this.handleClick("createGame")}
                 />
                 <PrimaryButton
-                  id='joinGame'
+                  id="joinGame"
                   text={strings.JoinBtnLabel}
                   onClick={() => this.handleClick("joinGame")}
                 />
@@ -372,17 +406,14 @@ export default class TicTacToe extends React.Component<
                   {this.state.notification ? (
                     <MessageBar
                       onDismiss={this.dismissNotification}
-                      dismissButtonAriaLabel='Close'
+                      dismissButtonAriaLabel="Close"
+                      styles={{
+                        root: { margin: 10, marginBottom: 0, width: "auto" }
+                      }}
                     >
                       {strings.OfferAcceptedNotification}
                     </MessageBar>
                   ) : null}
-                  {/* <PrimaryButton
-                    id='startBtn'
-                    text='Start'
-                    onClick={this.start}
-                    style={{ margin: 10 }}
-                  /> */}
                   <Game />
                 </div>
               ) : null}
@@ -391,14 +422,17 @@ export default class TicTacToe extends React.Component<
                   {this.state.notification ? (
                     <MessageBar
                       onDismiss={this.dismissNotification}
-                      dismissButtonAriaLabel='Close'
+                      dismissButtonAriaLabel="Close"
+                      styles={{
+                        root: { margin: 10, marginBottom: 0, width: "auto" }
+                      }}
                     >
                       {strings.NewGameOfferNotification}
                     </MessageBar>
                   ) : null}
                   <PrimaryButton
-                    id='hideOfferList'
-                    data-automation-id='test'
+                    id="hideOfferList"
+                    data-automation-id="test"
                     allowDisabledFocus={true}
                     toggle={true}
                     text={
@@ -407,24 +441,25 @@ export default class TicTacToe extends React.Component<
                         : strings.ShowOffersBtnLabel
                     }
                     onClick={() => this.handleClick("hideOfferList")}
-                    style={{ margin: 10 }}
+                    style={{ margin: 10, marginBottom: 0, width: "auto" }}
                   />
                   {this.state.offerList ? (
                     <Fabric style={{ margin: 10 }}>
+                      <PrimaryButton
+                        text={strings.PlayBtnLabel}
+                        onClick={() => this.handleClick("play")}
+                        style={{ marginBottom: 10, width: "auto" }}
+                      />
                       <DetailsList
                         items={data}
                         columns={this._columns}
-                        setKey='set'
+                        setKey="set"
                         selection={this._selection}
                         isHeaderVisible={false}
                         layoutMode={DetailsListLayoutMode.justified}
                         selectionMode={1}
                         selectionPreservedOnEmptyClick={true}
                         onItemInvoked={this._onItemInvoked}
-                      />
-                      <PrimaryButton
-                      text={strings.PlayBtnLabel}
-                      onClick={() => this.handleClick("play")}
                       />
                     </Fabric>
                   ) : null}
@@ -438,9 +473,12 @@ export default class TicTacToe extends React.Component<
     );
   }
 
-private _getSelectionDetails(): string {
-      return (this._selection.getSelection()[0] as IDetailsListBasicExampleItem).name;
-}
+  private _getSelectionDetails(): string {
+    if (this._selection.count != 0) {
+      return (this._selection.getSelection()[0] as IDetailsListBasicExampleItem)
+        .name;
+    }
+  }
 
   private _onItemInvoked = (item: IDetailsListBasicExampleItem): void => {
     this.getFileOffer(item.name);
