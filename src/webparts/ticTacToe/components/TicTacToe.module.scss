@@ -10,7 +10,7 @@
   .row {
     @include ms-Grid-row;
     @include ms-fontColor-white;
-    background-color: $ms-color-themeDark;
+    background-color: "[theme: themeDark, default: #005a9e]";
     padding: 20px;
   }
 
@@ -35,6 +35,11 @@
   .description {
     @include ms-font-l;
     @include ms-fontColor-white;
+  }
+
+  .button {
+    background-color: "[theme: themePrimary, default: #0078d7]";
+    border-color: "[theme: themePrimary, default: #0078d7]";
   }
 
   .startWindow {

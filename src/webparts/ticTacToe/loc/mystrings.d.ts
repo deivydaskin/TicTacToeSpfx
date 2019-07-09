@@ -18,7 +18,7 @@ declare interface ITicTacToeWebPartStrings {
   DocumentLibraryLabel: string;
 }
 
-declare module 'TicTacToeWebPartStrings' {
+declare module "TicTacToeWebPartStrings" {
   const strings: ITicTacToeWebPartStrings;
   export = strings;
 }
