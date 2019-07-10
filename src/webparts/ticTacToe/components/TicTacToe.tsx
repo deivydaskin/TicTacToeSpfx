@@ -30,7 +30,7 @@ var sdpConstraints = { optional: [{ RtpDataChannels: true }] };
 
 export const sendMSG = (move, xIsNext) => {
   if (pc.localDescription.type == "answer" && xIsNext) {
-    var value = {
+    let value = {
       figures: move,
       xIsNext: xIsNext
     };
@@ -38,7 +38,7 @@ export const sendMSG = (move, xIsNext) => {
       dc.send(JSON.stringify(value));
     }
   } else if (pc.localDescription.type == "offer" && !xIsNext) {
-    var value = {
+    let value = {
       figures: move,
       xIsNext: xIsNext
     };
@@ -50,8 +50,15 @@ export const sendMSG = (move, xIsNext) => {
   }
 };
 
-function dcInit(dc, isCreator, loginName, libId, siteUrl, spHttpClient) {
-  dc.onopen = () => {
+function dcInit(
+  dataChannel,
+  isCreator,
+  loginName,
+  libId,
+  siteUrl,
+  spHttpClient
+) {
+  dataChannel.onopen = () => {
     alert("Connected");
     if (isCreator) {
       let spOpts: ISPHttpClientOptions = {
@@ -80,7 +87,7 @@ function dcInit(dc, isCreator, loginName, libId, siteUrl, spHttpClient) {
         });
     }
   };
-  dc.onmessage = function(e) {
+  dataChannel.onmessage = e => {
     if (e.data) {
       let event = new CustomEvent("tic", { detail: e.data });
       document.dispatchEvent(event);
@@ -112,8 +119,8 @@ export default class TicTacToe extends React.Component<
   IState
 > {
   private _columns: IColumn[];
-  _listSubscriptionFactory: ListSubscriptionFactory;
-  _listSubscription: IListSubscription;
+  private _listSubscriptionFactory: ListSubscriptionFactory;
+  private _listSubscription: IListSubscription;
   private _selection: Selection;
 
   constructor(props) {
@@ -170,8 +177,8 @@ export default class TicTacToe extends React.Component<
       let spHttp = this.props.spHttpClient;
       let libId = this.props.libraryId;
 
-      pc.onicecandidate = function(e) {
-        if (e.candidate) return;
+      pc.onicecandidate = ev => {
+        if (ev.candidate) return;
         postOfferToList(loginName, pc.localDescription, siteURL, spHttp, libId);
       };
 
@@ -190,8 +197,8 @@ export default class TicTacToe extends React.Component<
         joinGame: !this.state.joinGame
       });
       this.createListSubscription();
-      pc.ondatachannel = function(e) {
-        dc = e.channel;
+      pc.ondatachannel = ev => {
+        dc = ev.channel;
         dcInit(dc, isCreator, loginName, libId, siteUrl, spHttp);
       };
     }
@@ -208,7 +215,7 @@ export default class TicTacToe extends React.Component<
     }
   }
 
-  getOfferList() {
+  private getOfferList(): void {
     sp.web.lists
       .getById(this.props.libraryId)
       .items.select("ID", "Title", "GUID", "Author/Name")
@@ -229,7 +236,7 @@ export default class TicTacToe extends React.Component<
       });
   }
 
-  createOffer() {
+  private createOffer(): void {
     let loginName = this.props.loginName;
     let libId = this.props.libraryId;
     let siteUrl = this.props.siteUrl;
@@ -239,7 +246,7 @@ export default class TicTacToe extends React.Component<
     dc = pc.createDataChannel(null);
     dcInit(dc, isCreator, loginName, libId, siteUrl, spHttp);
     pc.createOffer()
-      .then(function(offer) {
+      .then(offer => {
         return pc.setLocalDescription(offer);
       })
       .then(() => {
@@ -252,12 +259,12 @@ export default class TicTacToe extends React.Component<
       });
   }
 
-  start(answer) {
+  private start(answer): void {
     var answerDesc = new RTCSessionDescription(answer);
     pc.setRemoteDescription(answerDesc);
   }
 
-  createAnswerSDP(SDP, item) {
+  private createAnswerSDP(SDP, item): void {
     var offerDesc = new RTCSessionDescription(SDP);
 
     let siteURL = this.props.siteUrl;
@@ -266,7 +273,7 @@ export default class TicTacToe extends React.Component<
 
     pc.setRemoteDescription(offerDesc);
     pc.createAnswer(sdpConstraints)
-      .then(function(answer) {
+      .then(answer => {
         return pc.setLocalDescription(answer);
       })
       .then(() => {
@@ -282,7 +289,7 @@ export default class TicTacToe extends React.Component<
       });
   }
 
-  private getAnswerSDP() {
+  private getAnswerSDP(): void {
     this.props.spHttpClient
       .get(
         `${this.props.siteUrl}/_api/web/lists(guid'${
@@ -340,11 +347,11 @@ export default class TicTacToe extends React.Component<
     }
   }
 
-  componentDidMount() {
+  public componentDidMount(): void {
     pc = new RTCPeerConnection(null);
   }
 
-  componentWillUnmount() {
+  public componentWillUnmount(): void {
     let loginName = this.props.loginName;
     let spOpts: ISPHttpClientOptions = {
       headers: {
@@ -374,7 +381,7 @@ export default class TicTacToe extends React.Component<
       });
   }
 
-  dismissNotification() {
+  private dismissNotification(): void {
     this.setState({
       notification: false
     });
@@ -484,7 +491,7 @@ export default class TicTacToe extends React.Component<
     this.getFileOffer(item.name);
   };
 
-  private getFileOffer(item) {
+  private getFileOffer(item): void {
     this.props.spHttpClient
       .get(
         `${this.props.siteUrl}/_api/web/lists(guid'${

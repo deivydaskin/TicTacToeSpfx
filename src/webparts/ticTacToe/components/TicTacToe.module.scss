@@ -53,7 +53,7 @@
     justify-content: center;
   }
 
-  .board-row:after {
+  .boardRow:after {
     clear: both;
     content: "";
     display: table;
@@ -78,10 +78,6 @@
     outline: none;
   }
 
-  .kbd-navigation .square:focus {
-    background: #ddd;
-  }
-
   .game {
     display: flex;
     flex-direction: row;
@@ -89,7 +85,7 @@
     justify-content: center;
   }
 
-  .game-info {
+  .gameInfo {
     @include ms-font-xl;
     @include ms-fontColor-white;
     font-weight: $ms-font-weight-semibold;

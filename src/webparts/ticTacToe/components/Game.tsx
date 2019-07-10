@@ -56,7 +56,7 @@ export default class Game extends React.Component<{}, IGameState> {
     initxIsNext = !initxIsNext;
   }
 
-  componentDidMount() {
+  public componentDidMount(): void {
     document.addEventListener("tic", e => this.handleCustomEvent(e));
   }
 
@@ -83,7 +83,7 @@ export default class Game extends React.Component<{}, IGameState> {
             onClick={(i: number) => this.handleClick(i)}
           />
         </div>
-        <div className={styles["game-info"]}>
+        <div className={styles.gameInfo}>
           <div>{status}</div>
         </div>
         {winner || status == strings.GameStatusDraw ? (
