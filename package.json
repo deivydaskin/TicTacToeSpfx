@@ -11,6 +11,7 @@
     "test": "gulp test"
   },
   "dependencies": {
+    "@microsoft/sp-component-base": "1.8.2-plusbeta",
     "@microsoft/sp-core-library": "1.8.2-plusbeta",
     "@microsoft/sp-list-subscription": "1.8.2-plusbeta",
     "@microsoft/sp-lodash-subset": "1.8.2-plusbeta",

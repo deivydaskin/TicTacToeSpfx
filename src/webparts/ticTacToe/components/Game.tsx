@@ -6,11 +6,13 @@ import { IGameState } from "./props/IGameState";
 import { sendMSG } from "./TicTacToe";
 import { PrimaryButton } from "office-ui-fabric-react";
 import * as strings from "TicTacToeWebPartStrings";
+import { IReadonlyTheme } from "@microsoft/sp-component-base";
+import { IGameProps } from "./props/IGameProps";
 
 const initsqrs = [];
 var initxIsNext = true;
 
-export default class Game extends React.Component<{}, IGameState> {
+export default class Game extends React.Component<IGameProps, IGameState> {
   constructor(props) {
     super(props);
 
@@ -37,6 +39,7 @@ export default class Game extends React.Component<{}, IGameState> {
       squares: squares,
       xIsNext: !this.state.xIsNext
     });
+    console.log(this.state);
   }
 
   private handleCustomEvent(e): void {
@@ -62,6 +65,7 @@ export default class Game extends React.Component<{}, IGameState> {
 
   public render() {
     const winner = calculateWinner(this.state.squares);
+    const { semanticColors }: IReadonlyTheme = this.props.semColors;
 
     let status: string;
     if (winner) {
@@ -90,7 +94,12 @@ export default class Game extends React.Component<{}, IGameState> {
           <PrimaryButton
             text={strings.RestartBtnLabel}
             onClick={this.handleRestart}
-            style={{ marginTop: 50, marginLeft: -90 }}
+            style={{
+              marginTop: 50,
+              marginLeft: -90,
+              backgroundColor: semanticColors.primaryButtonBackground,
+              color: semanticColors.primaryButtonText
+            }}
           />
         ) : null}
       </div>

@@ -3,6 +3,7 @@
   "id": "7a4918e3-46a5-4d90-908e-49b6ca69d128",
   "alias": "TicTacToeWebPart",
   "componentType": "WebPart",
+  "supportsThemeVariants": true,
   "version": "*",
   "manifestVersion": 2,
   "requiresCustomScript": false,

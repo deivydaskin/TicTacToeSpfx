@@ -2,6 +2,7 @@ import * as React from "react";
 import styles from "./TicTacToe.module.scss";
 import { ITicTacToeProps } from "./props/ITicTacToeProps";
 import Game from "./Game";
+import GameThumbnail from "./GameThumbnail";
 import {
   SPHttpClient,
   SPHttpClientResponse,
@@ -24,6 +25,7 @@ import { MessageBar } from "office-ui-fabric-react/lib/MessageBar";
 import { postOfferToList } from "./Api";
 import { sp } from "@pnp/sp";
 import * as strings from "TicTacToeWebPartStrings";
+import { IReadonlyTheme } from "@microsoft/sp-component-base";
 
 var pc, dc;
 var sdpConstraints = { optional: [{ RtpDataChannels: true }] };
@@ -389,91 +391,142 @@ export default class TicTacToe extends React.Component<
 
   public render(): React.ReactElement<ITicTacToeProps> {
     var data = this.state.offers;
+    const { semanticColors }: IReadonlyTheme = this.props.themeVariant;
 
     return (
       <Fabric>
         <div className={styles.ticTacToe}>
-          <div className={styles.container}>
-            <div className={styles.row}>
-              <div className={styles.startWindow}>
-                <PrimaryButton
-                  id="createGame"
-                  text={strings.CreateBtnLabel}
-                  onClick={() => this.handleClick("createGame")}
-                />
-                <PrimaryButton
-                  id="joinGame"
-                  text={strings.JoinBtnLabel}
-                  onClick={() => this.handleClick("joinGame")}
-                />
-              </div>
+          <div
+            className={styles.row}
+            style={{ color: semanticColors.bodyText }}
+          >
+            {!this.state.startGame &&
+              (!this.state.joinGame && (
+                <div className={styles.startWindow}>
+                  <GameThumbnail />
+                  <div className={styles.startWindowBtns}>
+                    <PrimaryButton
+                      id="createGame"
+                      style={{
+                        backgroundColor: semanticColors.primaryButtonBackground,
+                        color: semanticColors.primaryButtonText
+                      }}
+                      text={strings.CreateBtnLabel}
+                      onClick={() => this.handleClick("createGame")}
+                    />
+                    <PrimaryButton
+                      id="joinGame"
+                      style={{
+                        backgroundColor: semanticColors.primaryButtonBackground,
+                        color: semanticColors.primaryButtonText
+                      }}
+                      text={strings.JoinBtnLabel}
+                      onClick={() => this.handleClick("joinGame")}
+                    />
+                  </div>
+                </div>
+              ))}
 
-              {this.state.startGame ? (
-                <div className={styles.gameWindow}>
-                  {this.state.notification ? (
-                    <MessageBar
-                      onDismiss={this.dismissNotification}
-                      dismissButtonAriaLabel="Close"
-                      styles={{
-                        root: { margin: 10, marginBottom: 0, width: "auto" }
+            {this.state.startGame && (
+              <div className={styles.gameWindow}>
+                {this.state.notification && (
+                  <MessageBar
+                    onDismiss={this.dismissNotification}
+                    dismissButtonAriaLabel="Close"
+                    styles={{
+                      root: {
+                        margin: 10,
+                        marginBottom: 0,
+                        width: "auto",
+                        backgroundColor: semanticColors.warningBackground,
+                        color: semanticColors.warningText
+                      }
+                    }}
+                  >
+                    {strings.OfferAcceptedNotification}
+                  </MessageBar>
+                )}
+                <Game semColors={this.props.themeVariant} />
+              </div>
+            )}
+            {this.state.joinGame && (
+              <div className={styles.gameWindow}>
+                {this.state.notification && (
+                  <MessageBar
+                    onDismiss={this.dismissNotification}
+                    dismissButtonAriaLabel="Close"
+                    styles={{
+                      root: {
+                        margin: 10,
+                        marginBottom: 0,
+                        width: "auto",
+                        backgroundColor: semanticColors.errorBackground,
+                        color: semanticColors.warningText
+                      }
+                    }}
+                  >
+                    {strings.NewGameOfferNotification}
+                  </MessageBar>
+                )}
+                <Game semColors={this.props.themeVariant} />
+                <PrimaryButton
+                  id="hideOfferList"
+                  allowDisabledFocus={true}
+                  toggle={true}
+                  text={
+                    this.state.offerList
+                      ? strings.HideOffersBtnLabel
+                      : strings.ShowOffersBtnLabel
+                  }
+                  onClick={() => this.handleClick("hideOfferList")}
+                  style={{
+                    margin: "auto",
+                    marginBottom: 0,
+                    width: "auto",
+                    minWidth: "300px",
+                    maxWidth: "500px",
+                    backgroundColor: semanticColors.primaryButtonBackground,
+                    color: semanticColors.primaryButtonText
+                  }}
+                />
+                {this.state.offerList && (
+                  <Fabric
+                    style={{
+                      margin: "auto",
+                      marginTop: "10px",
+                      minWidth: "300px"
+                    }}
+                  >
+                    <PrimaryButton
+                      text={strings.PlayBtnLabel}
+                      onClick={() => this.handleClick("play")}
+                      style={{
+                        marginBottom: 10,
+                        width: "auto",
+                        backgroundColor: semanticColors.primaryButtonBackground,
+                        color: semanticColors.primaryButtonText
                       }}
-                    >
-                      {strings.OfferAcceptedNotification}
-                    </MessageBar>
-                  ) : null}
-                  <Game />
-                </div>
-              ) : null}
-              {this.state.joinGame ? (
-                <div className={styles.gameWindow}>
-                  {this.state.notification ? (
-                    <MessageBar
-                      onDismiss={this.dismissNotification}
-                      dismissButtonAriaLabel="Close"
+                    />
+                    <DetailsList
+                      items={data}
+                      columns={this._columns}
+                      selection={this._selection}
+                      isHeaderVisible={false}
+                      layoutMode={DetailsListLayoutMode.justified}
+                      selectionMode={1}
+                      selectionPreservedOnEmptyClick={true}
+                      onItemInvoked={this._onItemInvoked}
                       styles={{
-                        root: { margin: 10, marginBottom: 0, width: "auto" }
+                        root: {
+                          backgroundColor: semanticColors.inputBackground,
+                          color: semanticColors.inputText
+                        }
                       }}
-                    >
-                      {strings.NewGameOfferNotification}
-                    </MessageBar>
-                  ) : null}
-                  <PrimaryButton
-                    id="hideOfferList"
-                    data-automation-id="test"
-                    allowDisabledFocus={true}
-                    toggle={true}
-                    text={
-                      this.state.offerList
-                        ? strings.HideOffersBtnLabel
-                        : strings.ShowOffersBtnLabel
-                    }
-                    onClick={() => this.handleClick("hideOfferList")}
-                    style={{ margin: 10, marginBottom: 0, width: "auto" }}
-                  />
-                  {this.state.offerList ? (
-                    <Fabric style={{ margin: 10 }}>
-                      <PrimaryButton
-                        text={strings.PlayBtnLabel}
-                        onClick={() => this.handleClick("play")}
-                        style={{ marginBottom: 10, width: "auto" }}
-                      />
-                      <DetailsList
-                        items={data}
-                        columns={this._columns}
-                        setKey="set"
-                        selection={this._selection}
-                        isHeaderVisible={false}
-                        layoutMode={DetailsListLayoutMode.justified}
-                        selectionMode={1}
-                        selectionPreservedOnEmptyClick={true}
-                        onItemInvoked={this._onItemInvoked}
-                      />
-                    </Fabric>
-                  ) : null}
-                  <Game />
-                </div>
-              ) : null}
-            </div>
+                    />
+                  </Fabric>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </Fabric>

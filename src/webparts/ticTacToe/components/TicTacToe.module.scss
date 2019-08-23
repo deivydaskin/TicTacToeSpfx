@@ -8,9 +8,10 @@
   }
 
   .row {
+    //max-width: 500px;
+    margin: auto;
     @include ms-Grid-row;
     @include ms-fontColor-white;
-    background-color: "[theme: themeDark, default: #005a9e]";
     padding: 20px;
   }
 
@@ -37,14 +38,18 @@
     @include ms-fontColor-white;
   }
 
-  .button {
-    background-color: "[theme: themePrimary, default: #0078d7]";
-    border-color: "[theme: themePrimary, default: #0078d7]";
+  .startWindow {
+    display: -webkit-box;
+    justify-content: center;
+    align-content: center;
   }
 
-  .startWindow {
+  .startWindowBtns {
     display: flex;
+    flex-direction: column;
     justify-content: space-evenly;
+    align-self: center;
+    margin: 30px;
   }
 
   .gameWindow {
@@ -60,18 +65,18 @@
   }
 
   .square {
+    @include ms-fontSize-28;
     background: #fff;
     border: 1px solid #999;
     float: left;
-    font-size: 2.5rem;
-    font-weight: bold;
     line-height: 34px;
     height: 75px;
+    width: 75px;
     margin-right: -1px;
     margin-top: -1px;
     padding: 0;
     text-align: center;
-    width: 75px;
+    display: table-cell;
   }
 
   .square:focus {
@@ -79,6 +84,7 @@
   }
 
   .game {
+    @include ms-fontSize-20;
     display: flex;
     flex-direction: row;
     padding: 10px;
@@ -86,9 +92,7 @@
   }
 
   .gameInfo {
-    @include ms-font-xl;
-    @include ms-fontColor-white;
-    font-weight: $ms-font-weight-semibold;
+    @include ms-fontSize-20;
     margin-left: 20px;
   }
 }
